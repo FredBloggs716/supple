@@ -98,6 +98,31 @@ header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;
 .chip.streak .big{color:var(--mint)}
 .chip .ico{font-size:18px}
 
+/* ---------- motivation marquee ---------- */
+.marquee{
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  background:linear-gradient(90deg,rgba(34,211,238,.06),rgba(167,139,250,.06));
+  padding:11px 0;white-space:nowrap;margin-bottom:26px;position:relative;
+}
+.marquee::before,.marquee::after{
+  content:'';position:absolute;top:0;bottom:0;width:60px;z-index:1;pointer-events:none;
+}
+.marquee::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
+.marquee::after{right:0;background:linear-gradient(270deg,var(--bg),transparent)}
+.marquee-inner{
+  display:inline-block;
+  font-family:'Unbounded',sans-serif;font-weight:700;font-size:13px;
+  text-transform:uppercase;letter-spacing:.12em;color:var(--dim);
+  animation:tickerScroll 36s linear infinite;
+}
+.marquee:hover .marquee-inner{animation-play-state:paused}
+.marquee-inner span{margin:0 26px}
+.marquee-inner .ma{color:var(--cyan)}
+.marquee-inner .mb{color:var(--violet)}
+.marquee-inner .sep{color:var(--faint);font-size:10px;margin:0 0}
+@keyframes tickerScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion: reduce){.marquee-inner{animation:none}}
+
 /* ---------- dashboard ---------- */
 .dash{display:grid;grid-template-columns:300px 1fr 1fr;gap:16px;margin-bottom:34px}
 @media(max-width:980px){.dash{grid-template-columns:1fr 1fr}}
@@ -306,6 +331,10 @@ footer .info b{color:var(--dim)}
       <div class="chip"><span class="ico">🏅</span><div><div class="big" id="badgeCount">0/18</div><div class="lbl">badges</div></div></div>
     </div>
   </header>
+
+  <div class="marquee reveal" aria-hidden="true" style="animation-delay:.05s">
+    <div class="marquee-inner" id="marquee"></div>
+  </div>
 
   <section class="dash">
     <div class="card pie-card reveal" style="animation-delay:.08s">
@@ -784,6 +813,22 @@ function renderBadges(){
 function renderAll(){
   renderStats(); renderPie(); renderNav(); renderWeek(); renderBadges();
 }
+
+/* motivation marquee */
+const PHRASES = [
+  'Flexibility is a skill, not a gift',
+  'Exhale and sink',
+  'Wait out the tension',
+  'Relax harder',
+  'A calm body bends',
+  'Don’t force it — let it',
+  'Range you can’t control isn’t yours yet',
+  'Five quiet minutes beats one heroic hour',
+  'The splits are rented — show up daily',
+  'Breathe out, go deeper',
+];
+const strip = PHRASES.map((p,i)=>`<span class="${i%2?'mb':'ma'}">${p}</span><span class="sep">❄</span>`).join('');
+$('marquee').innerHTML = strip + strip;
 
 $('resetBtn').onclick=()=>{
   if(confirm('Reset ALL quest progress? This cannot be undone.')){
