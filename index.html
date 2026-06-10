@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SUPPLE — The 12-Week Flexibility Quest</title>
+<title>SUPPLE — Social Training Club</title>
+<link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -65,6 +66,19 @@ body{
 
 /* ---------- header ---------- */
 header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:30px}
+.brand{display:flex;align-items:center;gap:18px}
+.logo-tile{
+  width:88px;height:88px;border-radius:22px;background:#fff;padding:5px;flex-shrink:0;
+  border:1px solid rgba(165,243,252,.35);
+  box-shadow:0 0 28px rgba(34,211,238,.22),0 14px 34px -14px rgba(0,0,0,.8);
+}
+.logo-tile img{width:100%;height:100%;object-fit:contain;border-radius:17px}
+.club{
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--ice);margin-bottom:6px;
+}
+.club i{font-style:normal;color:var(--faint)}
+@media(max-width:640px){.logo-tile{width:62px;height:62px;border-radius:16px;padding:3px}.logo-tile img{border-radius:13px}}
 .brand h1{
   font-family:'Unbounded',sans-serif;font-weight:900;font-size:clamp(40px,7vw,72px);line-height:.95;
   background:linear-gradient(105deg,var(--ice) 0%,var(--cyan) 35%,var(--blue) 60%,var(--violet) 100%);
@@ -279,8 +293,12 @@ footer .info b{color:var(--dim)}
 
   <header class="reveal">
     <div class="brand">
-      <h1>SUPPLE</h1>
-      <div class="sub">THE 12-WEEK FLEXIBILITY QUEST · <b>gymnastics</b> × <b>yoga</b> × <b>wrestling</b> × <b>relax-into-stretch</b></div>
+      <div class="logo-tile"><img src="logo.png" alt="Social Training Club"></div>
+      <div>
+        <div class="club">SOCIAL TRAINING CLUB <i>presents</i></div>
+        <h1>SUPPLE</h1>
+        <div class="sub">THE 12-WEEK FLEXIBILITY QUEST · <b>gymnastics</b> × <b>yoga</b> × <b>wrestling</b> × <b>relax-into-stretch</b></div>
+      </div>
     </div>
     <div class="head-chips">
       <div class="chip streak"><span class="ico">❄️</span><div><div class="big" id="streakVal">0</div><div class="lbl">day streak</div></div></div>
