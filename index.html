@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUPPLE — The 12-Week Flexibility Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060A13;
+  --panel:#0C1322;
+  --panel2:#101A2E;
+  --line:#1C2A45;
+  --text:#E6EEFA;
+  --dim:#8DA2C0;
+  --faint:#5A6E8C;
+  --cyan:#22D3EE;
+  --ice:#A5F3FC;
+  --violet:#A78BFA;
+  --blue:#60A5FA;
+  --mint:#5EEAD4;
+  --gold:#FDE68A;
+  --danger:#FB7185;
+  --glow-cyan:rgba(34,211,238,.35);
+  --glow-violet:rgba(167,139,250,.35);
+  --r:18px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Sora',sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+/* ---------- atmosphere ---------- */
+.aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.aurora::before{
+  content:'';position:absolute;width:130vw;height:130vw;top:-70vw;left:-20vw;
+  background:
+    radial-gradient(closest-side, rgba(34,211,238,.14), transparent 70%) 10% 20%/60% 60% no-repeat,
+    radial-gradient(closest-side, rgba(167,139,250,.13), transparent 70%) 80% 10%/55% 55% no-repeat,
+    radial-gradient(closest-side, rgba(96,165,250,.10), transparent 70%) 50% 60%/70% 70% no-repeat;
+  animation:drift 26s ease-in-out infinite alternate;
+}
+@keyframes drift{from{transform:translate3d(0,0,0) rotate(0deg)}to{transform:translate3d(4vw,3vw,0) rotate(6deg)}}
+.aurora::after{
+  content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(141,162,192,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(141,162,192,.05) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black,transparent 75%);
+}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");}
+.wrap{position:relative;z-index:2;max-width:1180px;margin:0 auto;padding:28px 22px 90px}
+
+/* ---------- type helpers ---------- */
+.mono{font-family:'JetBrains Mono',monospace}
+.label{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+
+/* ---------- header ---------- */
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:30px}
+.brand h1{
+  font-family:'Unbounded',sans-serif;font-weight:900;font-size:clamp(40px,7vw,72px);line-height:.95;
+  background:linear-gradient(105deg,var(--ice) 0%,var(--cyan) 35%,var(--blue) 60%,var(--violet) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  letter-spacing:-.02em;
+  filter:drop-shadow(0 0 24px rgba(34,211,238,.25));
+}
+.brand .sub{margin-top:6px;color:var(--dim);font-size:13px;letter-spacing:.04em}
+.brand .sub b{color:var(--ice);font-weight:600}
+.head-chips{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.chip{
+  display:flex;align-items:center;gap:9px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border:1px solid var(--line);border-radius:999px;padding:9px 16px;
+}
+.chip .big{font-family:'Unbounded',sans-serif;font-weight:700;font-size:17px;color:var(--ice)}
+.chip .lbl{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;color:var(--faint);text-transform:uppercase}
+.chip.streak .big{color:var(--mint)}
+.chip .ico{font-size:18px}
+
+/* ---------- dashboard ---------- */
+.dash{display:grid;grid-template-columns:300px 1fr 1fr;gap:16px;margin-bottom:34px}
+@media(max-width:980px){.dash{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.dash{grid-template-columns:1fr}}
+.card{
+  background:linear-gradient(160deg,rgba(20,30,52,.85),rgba(10,16,30,.92));
+  border:1px solid var(--line);border-radius:var(--r);padding:20px;
+  backdrop-filter:blur(6px);
+  box-shadow:0 18px 50px -22px rgba(0,0,0,.8);
+  position:relative;overflow:hidden;
+}
+.card::before{content:'';position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,rgba(165,243,252,.35),transparent)}
+.card h3{font-family:'Unbounded',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:14px}
+
+/* pie card */
+.pie-card{grid-row:span 2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+@media(max-width:980px){.pie-card{grid-row:auto}}
+.pie-wrap{position:relative;width:220px;height:220px}
+.pie-wrap svg{width:100%;height:100%;overflow:visible}
+.pie-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.pie-center .pct{font-family:'Unbounded',sans-serif;font-weight:900;font-size:42px;color:var(--ice);line-height:1;text-shadow:0 0 30px var(--glow-cyan)}
+.pie-center .pct small{font-size:20px}
+.pie-center .cap{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.22em;color:var(--faint);margin-top:5px}
+.pie-legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.pie-legend span{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--dim)}
+.dot{width:9px;height:9px;border-radius:3px}
+
+/* level card */
+.lvl-row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.lvl-num{font-family:'Unbounded',sans-serif;font-weight:900;font-size:46px;color:var(--cyan);line-height:1;text-shadow:0 0 26px var(--glow-cyan)}
+.lvl-name{font-family:'Unbounded',sans-serif;font-weight:700;font-size:16px;color:var(--text)}
+.xpbar{height:12px;background:#0A1120;border:1px solid var(--line);border-radius:99px;margin-top:14px;overflow:hidden;position:relative}
+.xpbar .fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--violet));box-shadow:0 0 14px var(--glow-cyan);transition:width .6s cubic-bezier(.22,1,.36,1)}
+.xp-meta{display:flex;justify-content:space-between;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--faint);letter-spacing:.08em}
+.xp-meta b{color:var(--ice)}
+
+/* disciplines */
+.disc-row{display:grid;grid-template-columns:84px 1fr 52px;align-items:center;gap:10px;margin-bottom:11px}
+.disc-row:last-child{margin-bottom:0}
+.disc-name{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:var(--dim)}
+.disc-bar{height:9px;background:#0A1120;border:1px solid var(--line);border-radius:99px;overflow:hidden}
+.disc-bar i{display:block;height:100%;border-radius:99px;transition:width .6s ease}
+.disc-pct{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim);text-align:right}
+
+/* phase progress card */
+.phase-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:12px}
+.phase-row:last-child{margin-bottom:0}
+.phase-row .nm{font-size:13px;font-weight:600}
+.phase-row .nm small{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;color:var(--faint);text-transform:uppercase;font-weight:400}
+.ring{position:relative;width:52px;height:52px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .v{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim)}
+
+/* ---------- week nav ---------- */
+.phases{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:26px}
+@media(max-width:880px){.phases{grid-template-columns:1fr}}
+.phase-block{border:1px solid var(--line);border-radius:var(--r);padding:14px 14px 12px;background:rgba(10,16,30,.6);position:relative}
+.phase-block.active-phase{border-color:rgba(165,243,252,.35)}
+.phase-block .ph-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.phase-block .ph-name{font-family:'Unbounded',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:.08em}
+.phase-block .ph-lock{font-size:13px}
+.weeks{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.wk{
+  position:relative;border:1px solid var(--line);border-radius:12px;background:var(--panel);
+  padding:10px 4px 8px;text-align:center;cursor:pointer;overflow:hidden;
+  transition:transform .15s ease,border-color .2s,box-shadow .2s;user-select:none;
+}
+.wk:hover{transform:translateY(-2px)}
+.wk .wnum{font-family:'Unbounded',sans-serif;font-weight:700;font-size:15px;position:relative;z-index:1}
+.wk .wlbl{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.16em;color:var(--faint);position:relative;z-index:1}
+.wk .wfill{position:absolute;left:0;right:0;bottom:0;opacity:.22;transition:height .5s ease}
+.wk.current{border-color:var(--ice);box-shadow:0 0 18px rgba(34,211,238,.25)}
+.wk.done100 .wnum::after{content:' ✓';color:var(--mint);font-size:11px}
+.wk.locked{cursor:not-allowed;opacity:.4}
+.wk.locked .wnum{color:var(--faint)}
+.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+/* ---------- week banner ---------- */
+.week-banner{
+  display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+  border:1px solid var(--line);border-left:3px solid var(--cyan);
+  background:linear-gradient(90deg,rgba(34,211,238,.07),transparent 60%);
+  border-radius:14px;padding:16px 20px;margin-bottom:22px;
+}
+.week-banner h2{font-family:'Unbounded',sans-serif;font-size:clamp(18px,3vw,26px);font-weight:900;letter-spacing:-.01em}
+.week-banner h2 em{font-style:normal;color:var(--cyan)}
+.week-banner .note{color:var(--dim);font-size:13px;max-width:430px}
+.week-banner .note b{color:var(--gold);font-weight:600}
+
+/* ---------- sessions ---------- */
+.sessions{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:44px}
+@media(max-width:880px){.sessions{grid-template-columns:1fr}}
+.session{padding:0;overflow:hidden}
+.sess-head{display:flex;align-items:center;gap:14px;padding:18px 20px 14px;border-bottom:1px solid var(--line)}
+.sess-ico{
+  width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:23px;
+  background:#0A1120;border:1px solid var(--line);flex-shrink:0;
+}
+.sess-head .t h4{font-family:'Unbounded',sans-serif;font-size:14.5px;font-weight:700;letter-spacing:.02em}
+.sess-head .t .day{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.16em;color:var(--faint);text-transform:uppercase;margin-top:2px}
+.sess-head .count{margin-left:auto;text-align:right}
+.sess-head .count .n{font-family:'Unbounded',sans-serif;font-weight:700;font-size:15px;color:var(--ice)}
+.sess-head .count .cl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--faint)}
+.sess-prog{height:4px;background:#0A1120}
+.sess-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--violet));transition:width .5s ease;box-shadow:0 0 10px var(--glow-cyan)}
+.session.cleared .sess-head{background:linear-gradient(90deg,rgba(94,234,212,.08),transparent)}
+.session.cleared .sess-ico{border-color:rgba(94,234,212,.5);box-shadow:0 0 16px rgba(94,234,212,.2)}
+.ex-list{padding:8px 10px 12px}
+.ex{
+  display:grid;grid-template-columns:30px 1fr auto;gap:12px;align-items:start;
+  padding:11px 10px;border-radius:12px;transition:background .2s;cursor:pointer;
+}
+.ex:hover{background:rgba(141,162,192,.06)}
+.ex.done .ex-name{color:var(--faint);text-decoration:line-through;text-decoration-color:rgba(94,234,212,.6)}
+.ex.done .ex-cue{opacity:.45}
+.cb{
+  width:22px;height:22px;border-radius:7px;border:1.5px solid var(--faint);margin-top:2px;
+  display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;
+  transition:all .18s ease;flex-shrink:0;
+}
+.ex.done .cb{background:linear-gradient(135deg,var(--mint),var(--cyan));border-color:transparent;color:#04222B;box-shadow:0 0 12px rgba(94,234,212,.45)}
+.ex-name{font-weight:600;font-size:14px;line-height:1.35}
+.ex-cue{font-size:12px;color:var(--dim);margin-top:3px;line-height:1.45}
+.ex-meta{text-align:right;flex-shrink:0}
+.ex-dur{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ice);font-weight:600;white-space:nowrap}
+.ex-side{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--faint);letter-spacing:.08em}
+.tag{
+  display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:600;letter-spacing:.14em;
+  padding:3px 7px;border-radius:6px;margin-top:6px;border:1px solid;
+}
+
+/* ---------- badges ---------- */
+.badges-sec h3{font-family:'Unbounded',sans-serif;font-size:15px;font-weight:900;letter-spacing:.04em;margin-bottom:6px}
+.badges-sec .bsub{color:var(--faint);font-size:12.5px;margin-bottom:18px;font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
+.badge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:50px}
+.badge{
+  border:1px solid var(--line);border-radius:14px;padding:16px 12px;text-align:center;
+  background:var(--panel);transition:transform .15s ease;
+}
+.badge:hover{transform:translateY(-3px)}
+.badge .bi{font-size:30px;filter:grayscale(1) brightness(.5);transition:filter .3s}
+.badge.earned .bi{filter:none;text-shadow:0 0 18px var(--glow-cyan)}
+.badge .bn{font-family:'Unbounded',sans-serif;font-size:10px;font-weight:700;letter-spacing:.05em;margin-top:9px;color:var(--faint)}
+.badge.earned .bn{color:var(--ice)}
+.badge .bd{font-size:10.5px;color:var(--faint);margin-top:4px;line-height:1.4}
+.badge.earned{border-color:rgba(165,243,252,.3);background:linear-gradient(170deg,rgba(34,211,238,.07),var(--panel))}
+
+/* ---------- footer ---------- */
+footer{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:22px}
+footer .info{color:var(--faint);font-size:12px;max-width:560px;line-height:1.6}
+footer .info b{color:var(--dim)}
+.reset-btn{
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--danger);
+  background:none;border:1px solid rgba(251,113,133,.35);border-radius:10px;padding:9px 16px;cursor:pointer;transition:all .2s;
+}
+.reset-btn:hover{background:rgba(251,113,133,.1)}
+
+/* ---------- toasts & fx ---------- */
+.toasts{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{
+  font-family:'Unbounded',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;
+  background:linear-gradient(135deg,#0E1A30,#0A1322);border:1px solid rgba(165,243,252,.45);
+  color:var(--ice);padding:12px 22px;border-radius:999px;
+  box-shadow:0 0 30px rgba(34,211,238,.3),0 16px 40px -10px rgba(0,0,0,.8);
+  animation:toastIn .35s cubic-bezier(.22,1.4,.36,1),toastOut .4s ease 2.8s forwards;
+}
+.toast.gold{border-color:rgba(253,230,138,.55);color:var(--gold);box-shadow:0 0 30px rgba(253,230,138,.25)}
+@keyframes toastIn{from{opacity:0;transform:translateY(-18px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(-12px)}}
+.confetti{position:fixed;width:9px;height:9px;border-radius:2px;z-index:60;pointer-events:none;animation:conf .95s cubic-bezier(.2,.7,.4,1) forwards}
+@keyframes conf{
+  from{opacity:1;transform:translate(0,0) rotate(0)}
+  to{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot))}
+}
+.xp-pop{
+  position:fixed;z-index:55;pointer-events:none;font-family:'Unbounded',sans-serif;font-weight:900;font-size:13px;
+  color:var(--cyan);text-shadow:0 0 12px var(--glow-cyan);animation:xpFloat .9s ease-out forwards;
+}
+@keyframes xpFloat{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-44px)}}
+
+/* page load reveal */
+.reveal{opacity:0;transform:translateY(16px);animation:rev .6s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes rev{to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="aurora"></div>
+<div class="grain"></div>
+<div class="toasts" id="toasts"></div>
+
+<div class="wrap">
+
+  <header class="reveal">
+    <div class="brand">
+      <h1>SUPPLE</h1>
+      <div class="sub">THE 12-WEEK FLEXIBILITY QUEST · <b>gymnastics</b> × <b>yoga</b> × <b>wrestling</b> × <b>relax-into-stretch</b></div>
+    </div>
+    <div class="head-chips">
+      <div class="chip streak"><span class="ico">❄️</span><div><div class="big" id="streakVal">0</div><div class="lbl">day streak</div></div></div>
+      <div class="chip"><span class="ico">⬡</span><div><div class="big" id="xpVal">0</div><div class="lbl">total xp</div></div></div>
+      <div class="chip"><span class="ico">🏅</span><div><div class="big" id="badgeCount">0/18</div><div class="lbl">badges</div></div></div>
+    </div>
+  </header>
+
+  <section class="dash">
+    <div class="card pie-card reveal" style="animation-delay:.08s">
+      <h3 style="align-self:flex-start">Quest Completion</h3>
+      <div class="pie-wrap">
+        <svg viewBox="0 0 200 200" id="pieSvg"></svg>
+        <div class="pie-center">
+          <div class="pct" id="pieVal">0<small>%</small></div>
+          <div class="cap">COMPLETE</div>
+        </div>
+      </div>
+      <div class="pie-legend">
+        <span><i class="dot" style="background:var(--cyan)"></i>P1 FOUNDATION</span>
+        <span><i class="dot" style="background:var(--violet)"></i>P2 EXPANSION</span>
+        <span><i class="dot" style="background:var(--mint)"></i>P3 MASTERY</span>
+      </div>
+    </div>
+
+    <div class="card reveal" style="animation-delay:.16s">
+      <h3>Bender Rank</h3>
+      <div class="lvl-row">
+        <div class="lvl-num" id="lvlNum">1</div>
+        <div>
+          <div class="lvl-name" id="lvlName">Rusty Hinge</div>
+          <div class="label" id="lvlNext">next: —</div>
+        </div>
+      </div>
+      <div class="xpbar"><div class="fill" id="xpFill" style="width:0%"></div></div>
+      <div class="xp-meta"><span><b id="xpCur">0</b> XP</span><span id="xpTo">0 to level up</span></div>
+    </div>
+
+    <div class="card reveal" style="animation-delay:.24s">
+      <h3>Discipline Mastery</h3>
+      <div id="discBars"></div>
+    </div>
+
+    <div class="card reveal" style="animation-delay:.32s">
+      <h3>Phase Progress</h3>
+      <div id="phaseRings"></div>
+    </div>
+  </section>
+
+  <section class="phases reveal" style="animation-delay:.4s" id="phaseNav"></section>
+
+  <div class="week-banner reveal" style="animation-delay:.46s" id="weekBanner"></div>
+
+  <section class="sessions" id="sessionsEl"></section>
+
+  <section class="badges-sec">
+    <h3>🏆 TROPHY CABINET</h3>
+    <div class="bsub">EARN ALL 18 · BADGES UNLOCK AUTOMATICALLY AS YOU STRETCH</div>
+    <div class="badge-grid" id="badgeGrid"></div>
+  </section>
+
+  <footer>
+    <div class="info">
+      <b>How it works:</b> 4 sessions a week (Mon · Wed · Fri · Sun works well). Tick each stretch as you finish it —
+      every tick earns XP, full sessions earn bonus XP, and phases unlock at 75%. Holds get longer each week inside a phase.
+      Never stretch into sharp pain; on the relax-into-stretch holds, breathe out slowly and <b>wait for the tension to leave</b> rather than forcing depth.
+      Progress is saved in this browser.
+    </div>
+    <button class="reset-btn" id="resetBtn">RESET QUEST</button>
+  </footer>
+
+</div>
+
+<script>
+/* ============================================================
+   PROGRAMME DATA
+   12 weeks · 3 phases × 4 weeks · 4 sessions/week · 6 stretches each
+   Each exercise: n=[phase1,phase2,phase3 names], c=cue,
+   d=discipline, t=[secs per phase] or r=[reps per phase], side=per side
+============================================================ */
+const DISC = {
+  GYM:{name:'GYMNASTICS', color:'var(--cyan)',   raw:'#22D3EE'},
+  YOG:{name:'YOGA',       color:'var(--violet)', raw:'#A78BFA'},
+  WRE:{name:'WRESTLING',  color:'var(--blue)',   raw:'#60A5FA'},
+  RIS:{name:'RELAX-IN',   color:'var(--mint)',   raw:'#5EEAD4'},
+};
+const PHASES = [
+  {name:'FOUNDATION', color:'#22D3EE', tag:'Learn every position. Build the breathing habit.'},
+  {name:'EXPANSION',  color:'#A78BFA', tag:'Deeper variations. Contract–relax everywhere.'},
+  {name:'MASTERY',    color:'#5EEAD4', tag:'End-range strength. Chase the big shapes.'},
+];
+const WIP_NOTES = [
+  'Learn the positions — easy depth, perfect breathing.',
+  'Holds are <b>+10% longer</b> this week. Same calm.',
+  'Holds are <b>+20% longer</b> this week. Sink further on every exhale.',
+  '<b>TEST WEEK</b> — film or measure your deepest position in each session.',
+];
+const SESSIONS = [
+  { name:'HIP QUEST', day:'SESSION A · MON', icon:'🧘', ex:[
+    {n:['Cat–Cow Flow','Cat–Cow Flow','Cat–Cow Flow'], c:'Move with the breath — inhale arch, exhale round. Wake the spine up.', d:'YOG', r:['×10','×12','×15']},
+    {n:['Low Lunge','Crescent Lunge','Crescent Lunge + Reach-Back'], c:'Back knee down (P1) → lifted (P2+). Tuck the tail, push hips forward.', d:'YOG', t:[45,60,75], side:1},
+    {n:['Half Pigeon','Half Pigeon + Forward Fold','Full Pigeon + Quad Grab'], c:'Square the hips. Fold over the front shin and let the glute melt.', d:'YOG', t:[60,75,90], side:1},
+    {n:['Lizard Pose','Lizard — Elbows to Floor','Lizard — Back Knee Lifted'], c:'Front foot wide of the hands. Long exhales into the hip crease.', d:'YOG', t:[45,60,75], side:1},
+    {n:['Seated Forward Fold','Seated Fold + Contract–Relax','Seated Fold + Contract–Relax'], c:'P2+: tense hamstrings 20% for 5s, exhale, sink. Repeat through the hold.', d:'RIS', t:[60,90,120]},
+    {n:['Half Split','Sliding Split (cushion under knee)','Front Split — Minus Position'], c:'Hips square over the back knee. Inch the front heel away each week.', d:'GYM', t:[45,60,90], side:1},
+  ]},
+  { name:'GYMNAST FORGE', day:'SESSION B · WED', icon:'🤸', ex:[
+    {n:['Wrist Prep Circuit','Wrist Prep Circuit','Wrist Prep — Loaded Rocks'], c:'Palm-down, palm-up, fingers-back rocks. Gymnastics starts at the wrists.', d:'GYM', r:['×8 each','×10 each','×12 each']},
+    {n:['Shoulder Dislocates (towel/band)','Dislocates — Narrower Grip','Dislocates — Narrowest Pain-Free Grip'], c:'Straight arms over and behind. Narrow the grip a finger-width each week.', d:'GYM', r:['×8','×10','×12']},
+    {n:['Pancake Pulses → Hold','Pancake Fold','Pancake — Chest Toward Floor'], c:'Wide straddle, tilt from the hips with a flat back. Walk hands forward.', d:'GYM', t:[45,60,90]},
+    {n:['Pike Fold','Pike Fold — Nose to Knees','Pike Fold — Toes Elevated'], c:'Legs locked. Pull with hip flexors, exhale, grab further down the legs.', d:'GYM', t:[45,60,90]},
+    {n:['Glute Bridge Hold','Tabletop Bridge','Full Wheel (Bridge)'], c:'Press the floor away, open the chest. The bridge is earned, not forced.', d:'GYM', t:[30,45,60]},
+    {n:['Wall Straddle — Legs Up','Wall Straddle — Weighted by Gravity','Wall Straddle — Micro-Pulses then Hang'], c:'Lie down, legs up the wall, let them fall open. Gravity does the work.', d:'RIS', t:[60,90,120]},
+  ]},
+  { name:'MAT ROOM', day:'SESSION C · FRI', icon:'🤼', ex:[
+    {n:['Neck Nods + Circles','Neck Nods + Circles','Neck Nods + Circles — Slow Tempo'], c:'Gentle, full range, zero speed. Prep before any bridge work.', d:'WRE', r:['×10 each','×12 each','×15 each']},
+    {n:['Front Bridge (hands assist)','Front Bridge — Light Hands','Front Bridge — Rocking'], c:'Forehead to mat, weight shared with hands. Build the neck patiently.', d:'WRE', t:[20,30,45]},
+    {n:['Back Bridge — Shoulders Down, Hips Up','Back Bridge — Crown Touch, Hands On','Wrestler’s Bridge — Hands Hovering'], c:'NEVER load a sore neck. Hands stay on the floor until P3 feels easy.', d:'WRE', t:[15,30,45]},
+    {n:['Hip Heist Drill','Hip Heist — Flowing','Hip Heist — Eyes Closed Flow'], c:'Sit-out and switch the hips through. Wrestling’s secret mobility drill.', d:'WRE', r:['×6 /side','×8 /side','×10 /side']},
+    {n:['Deep Squat Sit','Deep Squat Sit — No Hands','Deep Squat Sit + Knee Pry'], c:'Heels down, chest tall. Accumulate the time in chunks if needed.', d:'WRE', t:[60,90,120]},
+    {n:['Cossack Squats','Cossack Squats — Deeper','Cossack Squats — Heel Flat, Full Depth'], c:'Shift side to side, sit into one heel. Own the bottom position.', d:'GYM', r:['×6 /side','×8 /side','×10 /side']},
+  ]},
+  { name:'DEEP FREEZE', day:'SESSION D · SUN', icon:'🧊', ex:[
+    {n:['Down-Regulation Breathing','Down-Regulation Breathing','Down-Regulation Breathing'], c:'Lie down. In for 4, hold 4, out for 8. A tense body will not stretch.', d:'RIS', t:[90,90,120]},
+    {n:['Contract–Relax Hamstring (strap)','Contract–Relax Hamstring — Deeper Cycles','Contract–Relax Hamstring — 5 Cycles'], c:'Push the heel into the strap 8s at 30%, exhale, pull deeper. Repeat.', d:'RIS', t:[60,75,90], side:1},
+    {n:['Kneeling Hip Flexor + Glute Squeeze','Couch Stretch — Foot on Wall','Couch Stretch — Torso Upright'], c:'Squeeze the rear glute hard 6s, release, slide deeper. No lower-back arch.', d:'RIS', t:[60,75,90], side:1},
+    {n:['Wall Pec Stretch','Wall Pec — Contract–Relax','Wall Pec — Contract–Relax, Arm Higher'], c:'Press the palm into the wall 6s, release, rotate the chest away.', d:'RIS', t:[45,60,75], side:1},
+    {n:['90/90 Hip Hold','90/90 Hold + Lean','90/90 Hold + Chest to Shin'], c:'Both legs at right angles. Tall spine first, then hinge over the front shin.', d:'WRE', t:[60,75,90], side:1},
+    {n:['Straddle Sit — Wait Out the Tension','Straddle Sit — Wait Out the Tension','Straddle Sit — Wait Out the Tension'], c:'Sit in the stretch and simply wait. Don’t push. The tension leaves on its own.', d:'RIS', t:[120,150,180]},
+  ]},
+];
+
+const LEVELS = [
+  {xp:0,    name:'Rusty Hinge'},
+  {xp:300,  name:'Creaky Gate'},
+  {xp:700,  name:'Warming Up'},
+  {xp:1200, name:'Limber'},
+  {xp:1800, name:'Bender'},
+  {xp:2500, name:'Elastic'},
+  {xp:3300, name:'Pretzel'},
+  {xp:4200, name:'Liquid'},
+  {xp:5000, name:'Made of Water'},
+];
+const XP_EX = 10, XP_SESSION = 25, XP_WEEK = 100;
+const WEEKS = 12, SPW = SESSIONS.length, EPS = 6;
+const TOTAL_EX = WEEKS * SPW * EPS;
+
+/* ============================================================ STATE */
+const KEY = 'suppleQuest_v1';
+let state = load();
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.done) return s; }catch(e){}
+  return { done:{}, days:{}, badges:[], lastLevel:1, week:1 };
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+let curWeek = state.week || 1;
+
+/* ============================================================ HELPERS */
+const $ = id => document.getElementById(id);
+const phaseOf = w => Math.ceil(w/4);            // 1..3
+const wip = w => ((w-1)%4)+1;                   // week in phase 1..4
+const exId = (w,s,e) => w+'-'+s+'-'+e;
+const scaleFor = w => 1 + 0.10*(wip(w)-1);
+
+function fmtDur(secs){
+  if(secs < 60) return secs+'s';
+  const m = Math.floor(secs/60), s = secs%60;
+  return s ? m+'m '+(s<10?'0':'')+s+'s' : m+' min';
+}
+function exDisplay(ex, w){
+  const p = phaseOf(w)-1;
+  if(ex.r) return ex.r[p];
+  const secs = Math.round((ex.t[p]*scaleFor(w))/5)*5;
+  return fmtDur(secs);
+}
+
+function doneCount(filter){
+  let n = 0;
+  for(let w=1; w<=WEEKS; w++) for(let s=0; s<SPW; s++) for(let e=0; e<EPS; e++){
+    if(state.done[exId(w,s,e)] && (!filter || filter(w,s,e))) n++;
+  }
+  return n;
+}
+function sessionDone(w,s){
+  for(let e=0;e<EPS;e++) if(!state.done[exId(w,s,e)]) return false;
+  return true;
+}
+function weekDone(w){
+  for(let s=0;s<SPW;s++) if(!sessionDone(w,s)) return false;
+  return true;
+}
+function weekPct(w){
+  let n=0; for(let s=0;s<SPW;s++) for(let e=0;e<EPS;e++) if(state.done[exId(w,s,e)]) n++;
+  return n/(SPW*EPS);
+}
+function phasePct(p){
+  let n=0,t=0;
+  for(let w=(p-1)*4+1; w<=p*4; w++){ n += weekPct(w)*SPW*EPS; t += SPW*EPS; }
+  return n/t;
+}
+function phaseUnlocked(p){
+  if(p===1) return true;
+  return phasePct(p-1) >= 0.75;
+}
+function totalXP(){
+  let xp = doneCount()*XP_EX;
+  for(let w=1;w<=WEEKS;w++){
+    for(let s=0;s<SPW;s++) if(sessionDone(w,s)) xp += XP_SESSION;
+    if(weekDone(w)) xp += XP_WEEK;
+  }
+  return xp;
+}
+function levelFor(xp){
+  let i=0; while(i+1<LEVELS.length && xp>=LEVELS[i+1].xp) i++;
+  return i;
+}
+function streak(){
+  const day = d => d.toISOString().slice(0,10);
+  let n=0; const t=new Date();
+  if(!state.days[day(t)]) t.setDate(t.getDate()-1);   // streak alive if you stretched yesterday
+  while(state.days[day(t)]){ n++; t.setDate(t.getDate()-1); }
+  return n;
+}
+
+/* ============================================================ BADGES */
+const BADGES = [
+  {id:'first',   icon:'🌱', name:'FIRST BEND',     desc:'Complete your first stretch',          test:()=>doneCount()>=1},
+  {id:'sess1',   icon:'🎬', name:'OPENING NIGHT',  desc:'Clear a full session',                 test:()=>{for(let w=1;w<=WEEKS;w++)for(let s=0;s<SPW;s++)if(sessionDone(w,s))return true;return false}},
+  {id:'week1',   icon:'🗓️', name:'WEEK ONE DONE',  desc:'Finish every session in Week 1',       test:()=>weekDone(1)},
+  {id:'streak3', icon:'🔥', name:'KINDLING',       desc:'3-day stretch streak',                 test:()=>streak()>=3},
+  {id:'streak7', icon:'❄️', name:'COLD FRONT',     desc:'7-day stretch streak',                 test:()=>streak()>=7},
+  {id:'streak14',icon:'🌨️', name:'BLIZZARD',       desc:'14-day stretch streak',                test:()=>streak()>=14},
+  {id:'q25',     icon:'🧭', name:'BASE CAMP',      desc:'25% of the quest complete',            test:()=>doneCount()/TOTAL_EX>=0.25},
+  {id:'q50',     icon:'⛰️', name:'HALFWAY RIDGE',  desc:'50% of the quest complete',            test:()=>doneCount()/TOTAL_EX>=0.50},
+  {id:'q75',     icon:'🏔️', name:'SUMMIT PUSH',    desc:'75% of the quest complete',            test:()=>doneCount()/TOTAL_EX>=0.75},
+  {id:'q100',    icon:'👑', name:'ASCENDED',       desc:'100% — the whole quest',               test:()=>doneCount()>=TOTAL_EX},
+  {id:'p1',      icon:'🥉', name:'FOUNDATION',     desc:'Phase 1 fully complete',               test:()=>phasePct(1)>=1},
+  {id:'p2',      icon:'🥈', name:'EXPANSION',      desc:'Phase 2 fully complete',               test:()=>phasePct(2)>=1},
+  {id:'p3',      icon:'🥇', name:'MASTERY',        desc:'Phase 3 fully complete',               test:()=>phasePct(3)>=1},
+  {id:'gym',     icon:'🤸', name:'GYMNAST',        desc:'30 gymnastics stretches done',         test:()=>discDone('GYM')>=30},
+  {id:'yog',     icon:'🧘', name:'YOGI',           desc:'30 yoga stretches done',               test:()=>discDone('YOG')>=30},
+  {id:'wre',     icon:'🤼', name:'GRAPPLER',       desc:'30 wrestling stretches done',          test:()=>discDone('WRE')>=30},
+  {id:'ris',     icon:'🧊', name:'ICE COLD',       desc:'30 relax-into-stretch holds done',     test:()=>discDone('RIS')>=30},
+  {id:'lvl5',    icon:'⚡', name:'BENDER',         desc:'Reach rank 5 — Bender',                test:()=>levelFor(totalXP())>=4},
+];
+function discDone(d){
+  return doneCount((w,s,e)=>SESSIONS[s].ex[e].d===d);
+}
+function discTotal(d){
+  let n=0; SESSIONS.forEach(se=>se.ex.forEach(ex=>{if(ex.d===d)n++;}));
+  return n*WEEKS;
+}
+
+/* ============================================================ FX */
+function toast(msg, gold){
+  const t = document.createElement('div');
+  t.className = 'toast'+(gold?' gold':'');
+  t.textContent = msg;
+  $('toasts').appendChild(t);
+  setTimeout(()=>t.remove(), 3400);
+}
+function xpPop(x,y,amt){
+  const p = document.createElement('div');
+  p.className='xp-pop'; p.textContent='+'+amt+' XP';
+  p.style.left=(x-20)+'px'; p.style.top=(y-30)+'px';
+  document.body.appendChild(p);
+  setTimeout(()=>p.remove(),950);
+}
+const CONF_COLORS = ['#22D3EE','#A78BFA','#60A5FA','#5EEAD4','#A5F3FC','#FDE68A'];
+function confetti(x,y,count){
+  for(let i=0;i<count;i++){
+    const c = document.createElement('div');
+    c.className='confetti';
+    c.style.left=x+'px'; c.style.top=y+'px';
+    c.style.background=CONF_COLORS[Math.floor(Math.random()*CONF_COLORS.length)];
+    const ang = Math.random()*Math.PI*2, dist = 60+Math.random()*120;
+    c.style.setProperty('--dx', Math.cos(ang)*dist+'px');
+    c.style.setProperty('--dy', (Math.sin(ang)*dist-60)+'px');
+    c.style.setProperty('--rot', (Math.random()*540-270)+'deg');
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),1000);
+  }
+}
+
+/* ============================================================ PIE CHART */
+function polar(cx,cy,r,deg){
+  const a=(deg-90)*Math.PI/180;
+  return [cx+r*Math.cos(a), cy+r*Math.sin(a)];
+}
+function arcPath(cx,cy,r,a0,a1){
+  const [x0,y0]=polar(cx,cy,r,a0), [x1,y1]=polar(cx,cy,r,a1);
+  const large = (a1-a0)>180?1:0;
+  return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+}
+function renderPie(){
+  const svg=$('pieSvg'); const cx=100,cy=100,r=80,gap=7;
+  let html='';
+  for(let p=0;p<3;p++){
+    const a0=p*120+gap/2, a1=(p+1)*120-gap/2;
+    const pct=phasePct(p+1);
+    html+=`<path d="${arcPath(cx,cy,r,a0,a1)}" fill="none" stroke="#16203A" stroke-width="22" stroke-linecap="round"/>`;
+    if(pct>0.001){
+      const af=a0+(a1-a0)*Math.min(pct,1);
+      html+=`<path d="${arcPath(cx,cy,r,a0,Math.max(af,a0+1.5))}" fill="none" stroke="${PHASES[p].color}" stroke-width="22" stroke-linecap="round" style="filter:drop-shadow(0 0 7px ${PHASES[p].color}66)"/>`;
+    }
+  }
+  svg.innerHTML=html;
+  const overall=Math.round(doneCount()/TOTAL_EX*100);
+  $('pieVal').innerHTML=overall+'<small>%</small>';
+}
+
+/* ============================================================ RENDER */
+function renderStats(){
+  const xp=totalXP();
+  $('xpVal').textContent=xp;
+  $('streakVal').textContent=streak();
+
+  const li=levelFor(xp);
+  $('lvlNum').textContent=li+1;
+  $('lvlName').textContent=LEVELS[li].name;
+  if(li+1<LEVELS.length){
+    const lo=LEVELS[li].xp, hi=LEVELS[li+1].xp;
+    $('lvlNext').textContent='next: '+LEVELS[li+1].name;
+    $('xpFill').style.width=Math.min(100,(xp-lo)/(hi-lo)*100)+'%';
+    $('xpTo').textContent=(hi-xp)+' XP to level up';
+  } else {
+    $('lvlNext').textContent='MAX RANK';
+    $('xpFill').style.width='100%';
+    $('xpTo').textContent='legend status';
+  }
+  $('xpCur').textContent=xp;
+
+  if(li+1>state.lastLevel){
+    toast('⬆ LEVEL UP — '+LEVELS[li].name.toUpperCase()+'!', true);
+    confetti(innerWidth/2, 90, 30);
+  }
+  state.lastLevel=li+1;
+
+  /* disciplines */
+  let dh='';
+  for(const k in DISC){
+    const d=discDone(k), t=discTotal(k), pct=t?Math.round(d/t*100):0;
+    dh+=`<div class="disc-row">
+      <div class="disc-name" style="color:${DISC[k].raw}">${DISC[k].name}</div>
+      <div class="disc-bar"><i style="width:${pct}%;background:${DISC[k].raw};box-shadow:0 0 8px ${DISC[k].raw}55"></i></div>
+      <div class="disc-pct">${d}/${t}</div></div>`;
+  }
+  $('discBars').innerHTML=dh;
+
+  /* phase rings */
+  let ph='';
+  for(let p=1;p<=3;p++){
+    const pct=phasePct(p), C=2*Math.PI*21;
+    const locked=!phaseUnlocked(p);
+    ph+=`<div class="phase-row">
+      <div class="nm"><small>PHASE ${p}${locked?' · 🔒 LOCKED':''}</small>${PHASES[p-1].name}</div>
+      <div class="ring"><svg viewBox="0 0 52 52">
+        <circle cx="26" cy="26" r="21" fill="none" stroke="#16203A" stroke-width="5"/>
+        <circle cx="26" cy="26" r="21" fill="none" stroke="${PHASES[p-1].color}" stroke-width="5"
+          stroke-linecap="round" stroke-dasharray="${(pct*C).toFixed(1)} ${C.toFixed(1)}"/>
+      </svg><div class="v">${Math.round(pct*100)}%</div></div></div>`;
+  }
+  $('phaseRings').innerHTML=ph;
+
+  $('badgeCount').textContent=BADGES.filter(b=>b.test()).length+'/'+BADGES.length;
+}
+
+function renderNav(){
+  let h='';
+  for(let p=1;p<=3;p++){
+    const unlocked=phaseUnlocked(p);
+    const isCur=phaseOf(curWeek)===p;
+    h+=`<div class="phase-block${isCur?' active-phase':''}">
+      <div class="ph-head">
+        <span class="ph-name" style="color:${PHASES[p-1].color}">PHASE ${p} · ${PHASES[p-1].name}</span>
+        <span class="ph-lock">${unlocked?'':'🔒'}</span>
+      </div><div class="weeks">`;
+    for(let w=(p-1)*4+1; w<=p*4; w++){
+      const pct=weekPct(w);
+      h+=`<div class="wk${w===curWeek?' current':''}${pct>=1?' done100':''}${unlocked?'':' locked'}" data-w="${w}" data-p="${p}">
+        <div class="wfill" style="height:${pct*100}%;background:${PHASES[p-1].color}"></div>
+        <div class="wnum">${w}</div><div class="wlbl">WK</div></div>`;
+    }
+    h+='</div></div>';
+  }
+  $('phaseNav').innerHTML=h;
+  document.querySelectorAll('.wk').forEach(el=>{
+    el.onclick=()=>{
+      const w=+el.dataset.w, p=+el.dataset.p;
+      if(!phaseUnlocked(p)){
+        el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'),450);
+        toast('🔒 REACH 75% IN PHASE '+(p-1)+' TO UNLOCK');
+        return;
+      }
+      curWeek=w; state.week=w; save(); renderAll();
+      $('weekBanner').scrollIntoView({behavior:'smooth',block:'center'});
+    };
+  });
+}
+
+function renderWeek(){
+  const p=phaseOf(curWeek), wi=wip(curWeek);
+  $('weekBanner').innerHTML=`
+    <div>
+      <div class="label" style="color:${PHASES[p-1].color};margin-bottom:4px">PHASE ${p} — ${PHASES[p-1].name} · WEEK ${wi} OF 4</div>
+      <h2>WEEK <em>${String(curWeek).padStart(2,'0')}</em> / 12</h2>
+    </div>
+    <div class="note">${WIP_NOTES[wi-1]}<br><span style="color:var(--faint);font-size:12px">${PHASES[p-1].tag}</span></div>`;
+  $('weekBanner').style.borderLeftColor=PHASES[p-1].color;
+
+  let h='';
+  SESSIONS.forEach((se,si)=>{
+    const cleared=sessionDone(curWeek,si);
+    let n=0; for(let e=0;e<EPS;e++) if(state.done[exId(curWeek,si,e)]) n++;
+    h+=`<div class="card session${cleared?' cleared':''}">
+      <div class="sess-head">
+        <div class="sess-ico">${se.icon}</div>
+        <div class="t"><h4>${se.name}</h4><div class="day">${se.day}</div></div>
+        <div class="count"><div class="n">${n}/${EPS}</div><div class="cl">${cleared?'CLEARED ✓':'STRETCHES'}</div></div>
+      </div>
+      <div class="sess-prog"><i style="width:${n/EPS*100}%"></i></div>
+      <div class="ex-list">`;
+    se.ex.forEach((ex,ei)=>{
+      const id=exId(curWeek,si,ei), done=!!state.done[id];
+      const pn=ex.n[phaseOf(curWeek)-1], D=DISC[ex.d];
+      h+=`<div class="ex${done?' done':''}" data-id="${id}" data-s="${si}">
+        <div class="cb">✓</div>
+        <div>
+          <div class="ex-name">${pn}</div>
+          <div class="ex-cue">${ex.c}</div>
+          <span class="tag" style="color:${D.raw};border-color:${D.raw}44;background:${D.raw}11">${D.name}</span>
+        </div>
+        <div class="ex-meta">
+          <div class="ex-dur">${exDisplay(ex,curWeek)}</div>
+          ${ex.side?'<div class="ex-side">PER SIDE</div>':''}
+        </div></div>`;
+    });
+    h+='</div></div>';
+  });
+  $('sessionsEl').innerHTML=h;
+
+  document.querySelectorAll('.ex').forEach(el=>{
+    el.onclick=(ev)=>{
+      const id=el.dataset.id, si=+el.dataset.s;
+      const wasSessionDone=sessionDone(curWeek,si);
+      const wasWeekDone=weekDone(curWeek);
+      if(state.done[id]) delete state.done[id];
+      else{
+        state.done[id]=true;
+        state.days[new Date().toISOString().slice(0,10)]=true;
+        xpPop(ev.clientX,ev.clientY,XP_EX);
+        if(!wasSessionDone && sessionDone(curWeek,si)){
+          toast('✦ SESSION CLEARED — +'+XP_SESSION+' XP BONUS');
+          confetti(ev.clientX,ev.clientY,26);
+        }
+        if(!wasWeekDone && weekDone(curWeek)){
+          setTimeout(()=>{
+            toast('🏆 WEEK '+curWeek+' COMPLETE — +'+XP_WEEK+' XP', true);
+            confetti(innerWidth/2,140,40);
+          },350);
+        }
+      }
+      save(); renderAll();
+    };
+  });
+}
+
+function renderBadges(){
+  let h='';
+  BADGES.forEach(b=>{
+    const earned=b.test();
+    if(earned && !state.badges.includes(b.id)){
+      state.badges.push(b.id);
+      toast(b.icon+' BADGE EARNED — '+b.name, true);
+      save();
+    }
+    h+=`<div class="badge${earned?' earned':''}">
+      <div class="bi">${b.icon}</div><div class="bn">${b.name}</div><div class="bd">${b.desc}</div></div>`;
+  });
+  $('badgeGrid').innerHTML=h;
+}
+
+function renderAll(){
+  renderStats(); renderPie(); renderNav(); renderWeek(); renderBadges();
+}
+
+$('resetBtn').onclick=()=>{
+  if(confirm('Reset ALL quest progress? This cannot be undone.')){
+    state={done:{},days:{},badges:[],lastLevel:1,week:1};
+    curWeek=1; save(); renderAll();
+    toast('QUEST RESET — BACK TO WEEK 1');
+  }
+};
+
+renderAll();
+</script>
+</body>
+</html>
