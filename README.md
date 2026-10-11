@@ -1,5 +1,11 @@
 # Social Training Club
 
+> **Hosted on Cloudflare (free).** This app now runs as a Cloudflare Worker + D1
+> + R2 so it can be hosted free with persistent data. To put it online, follow
+> **[DEPLOY-CLOUDFLARE.md](DEPLOY-CLOUDFLARE.md)**. For local preview: `npm install`
+> then `npm run dev`. The original Python single-file server (`server.py`,
+> `Start app.bat`) is kept for reference; the notes below describe that version.
+
 A working coach and client web app using the supplied Social Training Club design. Includes account sign-in, a shared SQLite database and private exercise videos. Built with HTML, CSS, native JavaScript and Python 3.10+; no npm installation or application build is needed.
 
 ## Run on your computer
