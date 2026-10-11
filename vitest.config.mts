@@ -11,6 +11,10 @@ export default defineWorkersConfig(async () => {
   const migrations = await readD1Migrations(path.resolve(import.meta.dirname, "migrations"));
   return {
     test: {
+      // PBKDF2 (600k rounds) is slow under x64-emulated workerd on ARM64; give
+      // password-heavy tests headroom. On real Cloudflare this is milliseconds.
+      testTimeout: 60000,
+      hookTimeout: 60000,
       setupFiles: ["./test/apply-migrations.ts"],
       poolOptions: {
         workers: {

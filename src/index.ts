@@ -1,22 +1,18 @@
-// supple Worker entry point. Serves the frozen front-end (public/) and the /api/* routes,
-// same-origin. Security model ported 1:1 from server.py — see docs/superpowers/specs.
-
+// supple Worker entry point. Serves the frozen front-end (public/) and the /api/*
+// routes, same-origin. Security model ported 1:1 from server.py.
 import { APIError, json } from "./http";
+import { Env, publicOrigin } from "./env";
+import {
+  authStatus,
+  authSetup,
+  authLogin,
+  authLogout,
+  changePassword,
+  inviteInfo,
+  acceptInvite,
+} from "./auth";
 
-export interface Env {
-  DB: D1Database;
-  VIDEOS: R2Bucket;
-  ASSETS: Fetcher;
-  STC_PUBLIC_ORIGIN: string;
-  STC_SETUP_TOKEN: string;
-}
-
-// The origin used for security headers (HSTS only on https).
-export function publicOrigin(req: Request, env: Env): string {
-  if (env.STC_PUBLIC_ORIGIN) return env.STC_PUBLIC_ORIGIN.replace(/\/+$/, "");
-  const u = new URL(req.url);
-  return `${u.protocol}//${u.host}`;
-}
+export type { Env };
 
 export default {
   async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
@@ -47,12 +43,22 @@ export default {
 async function api(req: Request, env: Env, url: URL): Promise<Response> {
   const origin = publicOrigin(req, env);
   const path = url.pathname;
+  const m = req.method;
 
-  if (req.method === "GET" && path === "/api/health") {
+  if (m === "GET" && path === "/api/health") {
     await env.DB.prepare("SELECT 1").first();
     return json({ status: "ok" }, 200, {}, origin);
   }
+  if (m === "GET" && path === "/api/auth/status") return authStatus(req, env);
+  if (m === "POST" && path === "/api/auth/setup") return authSetup(req, env);
+  if (m === "POST" && path === "/api/auth/login") return authLogin(req, env);
+  if (m === "POST" && path === "/api/auth/logout") return authLogout(req, env);
+  if (m === "POST" && path === "/api/auth/accept") return acceptInvite(req, env);
+  if (m === "POST" && path === "/api/password") return changePassword(req, env);
+  if (m === "GET" && path.startsWith("/api/invitations/")) {
+    return inviteInfo(req, env, decodeURIComponent(path.slice("/api/invitations/".length)));
+  }
 
-  // Remaining /api routes are added in Tasks 4–7.
+  // Workspace / member / leaderboard / video routes are added in Tasks 5–7.
   throw new APIError("Not found.", 404);
 }
