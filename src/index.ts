@@ -11,6 +11,8 @@ import {
   inviteInfo,
   acceptInvite,
 } from "./auth";
+import { authenticate } from "./guards";
+import { getWorkspaceHandler, putWorkspaceHandler } from "./workspace";
 
 export type { Env };
 
@@ -59,6 +61,13 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
     return inviteInfo(req, env, decodeURIComponent(path.slice("/api/invitations/".length)));
   }
 
-  // Workspace / member / leaderboard / video routes are added in Tasks 5–7.
+  if (path === "/api/workspace" && m === "GET") {
+    return getWorkspaceHandler(req, env, await authenticate(req, env));
+  }
+  if (path === "/api/workspace" && m === "PUT") {
+    return putWorkspaceHandler(req, env, await authenticate(req, env, { write: true }));
+  }
+
+  // Member / leaderboard / video routes are added in Tasks 6–7.
   throw new APIError("Not found.", 404);
 }
