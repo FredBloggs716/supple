@@ -1,0 +1,3 @@
+# Copy to .dev.vars for local `wrangler dev`. .dev.vars is gitignored.
+# Local dev on localhost treats setup as trusted, so this can be any value locally.
+STC_SETUP_TOKEN=local-dev-setup-token

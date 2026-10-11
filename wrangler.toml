@@ -1,0 +1,22 @@
+name = "supple"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+
+# Serves the FROZEN front-end (public/) unchanged, same-origin with the API.
+assets = { directory = "./public", binding = "ASSETS" }
+
+[[d1_databases]]
+binding = "DB"
+database_name = "supple"
+database_id = "local"   # replaced with the real id from `wrangler d1 create supple` before remote deploy
+
+[[r2_buckets]]
+binding = "VIDEOS"
+bucket_name = "supple-videos"
+
+[vars]
+# Set empty for local dev. In production, leave blank to infer HTTPS from the request,
+# or set to the exact public origin e.g. "https://training.example.com".
+STC_PUBLIC_ORIGIN = ""
+# STC_SETUP_TOKEN is set as a secret in production (`wrangler secret put STC_SETUP_TOKEN`).
+# Local dev reads it from .dev.vars (see .dev.vars.example).

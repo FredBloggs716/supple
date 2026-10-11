@@ -9,3 +9,9 @@ node_modules/
 *.sqlite3
 *.sqlite3-wal
 *.sqlite3-shm
+
+# Cloudflare / node
+node_modules/
+.wrangler/
+.dev.vars
+dist/

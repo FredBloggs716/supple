@@ -1,0 +1,26 @@
+{
+  "name": "supple",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Social Training Club — coach/client app on Cloudflare Workers + D1 + R2",
+  "scripts": {
+    "dev": "node scripts/wrangler.mjs dev",
+    "deploy": "node scripts/wrangler.mjs deploy",
+    "wrangler": "node scripts/wrangler.mjs",
+    "test": "vitest run",
+    "migrate:local": "node scripts/wrangler.mjs d1 execute supple --local --file migrations/0001_init.sql",
+    "migrate:remote": "node scripts/wrangler.mjs d1 execute supple --remote --file migrations/0001_init.sql",
+    "postinstall": "node scripts/patch-workerd-arm64.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.8.19",
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "typescript": "^5.6.0",
+    "vitest": "~3.2.0",
+    "wrangler": "^4.40.0"
+  },
+  "dependencies": {
+    "@cloudflare/workerd-windows-64": "^1.20250906.0",
+    "workerd-win64-wrangler": "npm:@cloudflare/workerd-windows-64@^1.20261006.1"
+  }
+}
