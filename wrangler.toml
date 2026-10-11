@@ -1,6 +1,6 @@
 name = "supple"
 main = "src/index.ts"
-compatibility_date = "2026-01-01"
+compatibility_date = "2025-09-06"
 
 # Serves the FROZEN front-end (public/) unchanged, same-origin with the API.
 assets = { directory = "./public", binding = "ASSETS" }
