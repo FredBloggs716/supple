@@ -1,6 +1,6 @@
 // supple Worker entry point. Serves the frozen front-end (public/) and the /api/*
 // routes, same-origin. Security model ported 1:1 from server.py.
-import { APIError, json } from "./http";
+import { APIError, json, securityHeaders } from "./http";
 import { Env, publicOrigin } from "./env";
 import {
   authStatus,
@@ -15,6 +15,7 @@ import { authenticate } from "./guards";
 import { getWorkspaceHandler, putWorkspaceHandler } from "./workspace";
 import { createInvitation, memberActions } from "./member";
 import { leaderboard } from "./leaderboard";
+import { uploadVideo, serveVideo } from "./video";
 
 export type { Env };
 
@@ -27,7 +28,12 @@ export default {
         return await api(req, env, url);
       }
       if (req.method === "GET" || req.method === "HEAD") {
-        return env.ASSETS.fetch(req);
+        // Serve the frozen front-end, but apply the same security headers the
+        // Python server put on static responses (server.py:1013).
+        const res = await env.ASSETS.fetch(req);
+        const headers = new Headers(res.headers);
+        for (const [k, v] of Object.entries(securityHeaders(origin))) headers.set(k, v);
+        return new Response(res.body, { status: res.status, headers });
       }
       throw new APIError("Not found.", 404);
     } catch (err) {
@@ -80,6 +86,16 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
     return leaderboard(req, env, await authenticate(req, env));
   }
 
-  // Video routes are added in Task 7.
+  if (path.startsWith("/api/videos/")) {
+    const eid = decodeURIComponent(path.slice("/api/videos/".length));
+    if (m === "POST") {
+      return uploadVideo(req, env, await authenticate(req, env, { write: true }), eid);
+    }
+    if (m === "GET" || m === "HEAD") {
+      await authenticate(req, env);
+      return serveVideo(req, env, eid, m === "HEAD");
+    }
+  }
+
   throw new APIError("Not found.", 404);
 }

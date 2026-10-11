@@ -19,6 +19,7 @@ export function securityHeaders(origin: string): Record<string, string> {
 }
 
 export const MAX_JSON = 3 * 1024 * 1024;
+export const MAX_VIDEO = 50 * 1024 * 1024;
 
 // Ports server.py read_json(): JSON content-type, size cap, must be an object.
 export async function readJson(req: Request): Promise<any> {
