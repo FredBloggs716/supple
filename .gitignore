@@ -2,3 +2,10 @@ __pycache__/
 *.pyc
 .DS_Store
 node_modules/
+.data/
+.env
+.env.*
+!.env.example
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
