@@ -52,6 +52,22 @@ export async function tokenHash(token: string): Promise<string> {
   return toHex(await crypto.subtle.digest("SHA-256", enc.encode(token)));
 }
 
+function base64url(b: Uint8Array): string {
+  let s = "";
+  for (const x of b) s += String.fromCharCode(x);
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+// URL-safe session/invite token (mirrors secrets.token_urlsafe).
+export function randomToken(bytes = 32): string {
+  return base64url(crypto.getRandomValues(new Uint8Array(bytes)));
+}
+
+// Hex id (mirrors secrets.token_hex).
+export function randomHex(bytes = 16): string {
+  return toHex(crypto.getRandomValues(new Uint8Array(bytes)).buffer);
+}
+
 // Constant-time string compare (mirrors hmac.compare_digest).
 export function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
