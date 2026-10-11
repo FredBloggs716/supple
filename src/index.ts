@@ -13,6 +13,8 @@ import {
 } from "./auth";
 import { authenticate } from "./guards";
 import { getWorkspaceHandler, putWorkspaceHandler } from "./workspace";
+import { createInvitation, memberActions } from "./member";
+import { leaderboard } from "./leaderboard";
 
 export type { Env };
 
@@ -68,6 +70,16 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
     return putWorkspaceHandler(req, env, await authenticate(req, env, { write: true }));
   }
 
-  // Member / leaderboard / video routes are added in Tasks 6–7.
+  if (path === "/api/invitations" && m === "POST") {
+    return createInvitation(req, env, await authenticate(req, env, { write: true }));
+  }
+  if (path === "/api/member/actions" && m === "POST") {
+    return memberActions(req, env, await authenticate(req, env, { write: true }));
+  }
+  if (path === "/api/leaderboard" && m === "GET") {
+    return leaderboard(req, env, await authenticate(req, env));
+  }
+
+  // Video routes are added in Task 7.
   throw new APIError("Not found.", 404);
 }
