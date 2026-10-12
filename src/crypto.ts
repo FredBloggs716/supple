@@ -3,7 +3,11 @@
 import { APIError } from "./http";
 import { text } from "./validate";
 
-const ROUNDS = 600_000;
+// Cloudflare Workers caps WebCrypto PBKDF2 at 100k iterations in production
+// (local workerd/miniflare does NOT enforce this, so tests pass at higher values).
+// 100k PBKDF2-HMAC-SHA256 is OWASP-acceptable. The count is stored per-hash, so
+// this can be raised later if the platform limit changes.
+const ROUNDS = 100_000;
 const enc = new TextEncoder();
 
 function toHex(buf: ArrayBuffer): string {

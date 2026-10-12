@@ -40,6 +40,7 @@ export default {
       if (err instanceof APIError) {
         return json({ error: err.msg }, err.status, {}, origin);
       }
+      console.error("UNCAUGHT", err instanceof Error ? err.stack : String(err));
       return json(
         { error: "The server could not complete this request. Please try again." },
         500,

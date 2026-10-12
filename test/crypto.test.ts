@@ -5,7 +5,7 @@ describe("crypto", () => {
   it("hashes and verifies a valid password", async () => {
     const h = await passwordHash("correct horse battery staple");
     expect(h.split("$").length).toBe(3);
-    expect(h.startsWith("600000$")).toBe(true);
+    expect(h.startsWith("100000$")).toBe(true);
     expect(await passwordMatches("correct horse battery staple", h)).toBe(true);
     expect(await passwordMatches("wrong password here", h)).toBe(false);
   });
