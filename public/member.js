@@ -358,16 +358,20 @@ export function startMemberApp(session) {
     submit.disabled = true;
     try {
       if (form.id === "member-workout") {
+        const completed = f.getAll("complete");
+        if (!completed.length) throw Error("Mark at least one movement complete to log this session.");
         await update("workout", {
-          completed: f.getAll("complete"),
-          entries: plan().exercises.map((e) => ({
-            exercise: e.id,
-            weight: Number(f.get("weight-" + e.id)),
-            reps: Number(f.get("reps-" + e.id)),
-          })),
+          completed,
+          entries: plan()
+            .exercises.filter((e) => completed.includes(e.id))
+            .map((e) => ({
+              exercise: e.id,
+              weight: Number(f.get("weight-" + e.id)),
+              reps: Number(f.get("reps-" + e.id)),
+            })),
         });
         close();
-        toast("Session complete. 50 club points earned.");
+        toast("Session logged. 50 club points earned.");
       }
       if (form.id === "member-checkin") {
         await update("checkin", { text: value("text") });

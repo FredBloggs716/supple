@@ -35,16 +35,30 @@ describe("member actions", () => {
     expect(replay.json.revision).toBe(rev); // revision unchanged
   });
 
-  it("requires every exercise to be marked complete", async () => {
-    await setupCoach(fullWorkspace());
+  it("allows a partial session but rejects an empty one", async () => {
+    const ws = fullWorkspace();
+    ws.exercises.push({ id: "e2", name: "Press", equipment: "Barbell", prescription: "3x5", cues: ["brace"] });
+    ws.programmes[0].exercises.push({ id: "e2", sets: "3x5" });
+    await setupCoach(ws);
     const { cookie, csrf } = await memberLogin();
-    const r = await req(
+
+    const none = await req(
       "/api/member/actions",
       "POST",
-      { key: "evt-x", action: "workout", completed: [], entries: [] },
+      { key: "p0", action: "workout", completed: [], entries: [] },
       { cookie, csrf },
     );
-    expect(r.status).toBe(400);
+    expect(none.status).toBe(400);
+
+    // Only 1 of the 2 programme exercises done — should still log.
+    const partial = await req(
+      "/api/member/actions",
+      "POST",
+      { key: "p1", action: "workout", completed: ["e1"], entries: [{ exercise: "e1", weight: 60, reps: 5 }] },
+      { cookie, csrf },
+    );
+    expect(partial.status).toBe(200);
+    expect(partial.json.workspace.logs.length).toBe(1);
   });
 
   it("caps water at 200", async () => {

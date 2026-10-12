@@ -29,10 +29,6 @@ export async function createInvitation(req: Request, env: Env, user: UserRow): P
 function firstName(name: string): string {
   return name.trim().split(/\s+/)[0];
 }
-function setsEqual(a: Set<string>, b: Set<string>): boolean {
-  return a.size === b.size && [...a].every((x) => b.has(x));
-}
-
 function applyMemberAction(w: any, user: UserRow, body: any): void {
   const cid = user.client;
   const c = w.clients.find((c: any) => c.id === cid);
@@ -43,12 +39,17 @@ function applyMemberAction(w: any, user: UserRow, body: any): void {
   if (action === "workout") {
     const p = w.programmes.find((p: any) => p.id === c.programme);
     if (!p) throw new APIError("Your coach has not assigned a programme yet.", 409);
+    // A client may log a partial session — any non-empty subset of the
+    // programme's exercises (people don't always have time for all of them).
     const completed = body.completed ?? [];
+    const progIds = new Set<string>(p.exercises.map((e: any) => e.id));
     if (
       !Array.isArray(completed) ||
-      !setsEqual(new Set<string>(completed), new Set<string>(p.exercises.map((e: any) => e.id)))
+      completed.length < 1 ||
+      new Set(completed).size !== completed.length ||
+      !completed.every((id: string) => progIds.has(id))
     ) {
-      throw new APIError("Mark every exercise complete before logging this session.");
+      throw new APIError("Mark at least one exercise complete to log this session.");
     }
     const entries = body.entries ?? [];
     if (!Array.isArray(entries) || entries.length > 100) throw new APIError("Invalid training log.");
