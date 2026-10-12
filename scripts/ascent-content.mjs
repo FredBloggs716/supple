@@ -139,14 +139,7 @@ export const programmes = [
     ex("kbpress", "G3 main · 5×3/side · no grind"), ex("shouldercars", "G3 active rest · 3/dir"),
     ex("tgu", "G4 practice · 3/side slow"), ex("suitcase", "G4 carry · 25m/side"), ex("kbcp", "G4 complex · 5/side"),
   ]),
-  // 7. GYMNASTIC STRENGTH — own the position, straight-arm, dwell before reps
-  pg("gym", "Gymnastic Strength", "Bodyweight strength", 6, 3, "slate",
-    "~50 min. Own the position — dwell/regress before reps. Straight-arm strength + hollow body. Wk1-2 build hold time, wk3-4 harder progressions (open tucks), wk5 add reps/load, wk6 easy. Shoulders packed, ribs down.", [
-    ex("hs", "G1 main · 5×30s"), ex("scappush", "G1 shoulder · 10"), ex("pushup", "G1 push · 10"), ex("hollow", "G1 core · 20s"),
-    ex("fl", "G2 main · 5×10s"), ex("invrow", "G2 pull · 8"), ex("pullup", "G2 pull · 4×5"), ex("deadbug", "G2 core · 8/side"),
-    ex("lsit", "G3 main · 5×15s"), ex("pallof", "G3 anti-rot · 10/side"), ex("bearcrawl", "G3 whole-body · 15m"), ex("shouldercars", "G3 mobility · 3/dir"),
-    ex("jeff", "G4 range · 6 (light)"), ex("cossack", "G4 range · 6/side"),
-  ]),
+  // (Gymnastic Strength is now the dedicated 5-level suite in ascent-gymnastics.mjs)
   // 8. EXPRESS STRENGTH — 2 groups, big movements, ~25 min
   pg("exstr", "Express Strength", "Strength", 4, 4, "dark",
     "~25 min. Short on time — two groups, big movements, done. Full-body stimulus. Wk1-2 groove, wk3 add load, wk4 easy. Brace, full ROM, no junk reps.", [
