@@ -5,12 +5,13 @@ import fs from "node:fs";
 import * as core from "./ascent-content.mjs";
 import * as expansion from "./ascent-expansion.mjs";
 import * as gym from "./ascent-gymnastics.mjs";
+import * as sj from "./ascent-superjoints.mjs";
 
-const exercises = [...core.exercises, ...expansion.exercises, ...gym.exercises];
-const programmes = [...core.programmes, ...gym.programmes];
+const exercises = [...core.exercises, ...expansion.exercises, ...gym.exercises, ...sj.exercises];
+const programmes = [...core.programmes, ...gym.programmes, ...sj.programmes];
 
 const map = {};
-for (const f of ["video-map.json", "video-map-2.json", "video-map-3.json", "video-map-4.json"]) {
+for (const f of ["video-map.json", "video-map-2.json", "video-map-3.json", "video-map-4.json", "video-map-5.json"]) {
   Object.assign(map, JSON.parse(fs.readFileSync(new URL("./" + f, import.meta.url))));
 }
 // Exercise display names that differ from the video-map key.

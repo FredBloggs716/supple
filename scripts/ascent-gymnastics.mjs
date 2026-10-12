@@ -23,7 +23,8 @@ export const exercises = [
   mk("hollowrock", "Hollow Body Rock", "Core", "Bodyweight", ["Hold the hollow, then rock from shoulders to hips as one rigid unit.", "Lower back stays glued; no breaking at the hips."]),
   mk("scappull", "Scapular Pull", "Upper body", "Bar", ["Dead hang with straight arms, pull the shoulders down and back.", "Shoulder blades do the work; the base of every pull."]),
   mk("support", "Support Hold", "Upper body", "Parallettes/bars", ["Arms locked, shoulders down, body tall and hollow over the hands.", "Builds straight-arm support strength; progress to rings."]),
-  mk("germanhang", "German Hang", "Upper body", "Rings/bar", ["Hang through into a shoulder-extension stretch, straight arms.", "Builds shoulder mobility + strength for levers; ease in slowly."]),
+  mk("shoulderext", "Seated Shoulder Extension Stretch", "Mobility", "Floor/bench", ["Sit with hands behind you, fingers back; slide the hips forward.", "Open the front of the shoulders gently — a seated prep, no bodyweight hang. The beginner-friendly shoulder opener before levers."]),
+  mk("germanhang", "German Hang", "Upper body", "Rings/bar", ["Hang through into a shoulder-extension stretch, straight arms.", "Builds shoulder mobility + strength for levers; ease in slowly (intermediate+)."]),
   mk("skincat", "Skin the Cat", "Upper body", "Rings/bar", ["From a tuck inversion, roll through to the German hang and back.", "Straight-arm control through the full shoulder range."]),
   // Planche line (push)
   mk("ppp", "Pseudo Planche Push-Up", "Upper body", "Bodyweight", ["Hands by the hips, lean the shoulders far forward over them.", "Straight-arm lean + push; the gateway to the planche."]),
@@ -72,7 +73,7 @@ export const programmes = [
   pg("gym1", "Gymnastic Strength · L1 Foundations", "Gymnastic strength", 8, 3, "slate",
     "~45 min. WRIST PREP first. Build the straight-arm base + hollow/arch line + support. Static holds: hardest CLEAN variation ~10-15s, accumulate sets. Dynamic 2-3×3-5. Progress the leverage, not just the time.", [
     ex("wristprep", "warm-up · 5 min"), ex("hollow", "line · 4×20-30s"), ex("archhold", "line · 4×20s"), ex("scappull", "scap · 3×8"),
-    ex("support", "hold · 4×20-30s"), ex("lsit", "hold · 5× max (tuck→one-leg)"), ex("invrow", "pull · 3×8-10"), ex("pushup", "push · 3×10-15"), ex("germanhang", "shoulder prep · 3×20-30s"),
+    ex("support", "hold · 4×20-30s"), ex("lsit", "hold · 5× max (tuck→one-leg)"), ex("invrow", "pull · 3×8-10"), ex("pushup", "push · 3×10-15"), ex("shoulderext", "shoulder prep · 3×20-30s"),
   ]),
   pg("gym2", "Gymnastic Strength · L2 Builder", "Gymnastic strength", 8, 3, "slate",
     "~50 min. Wrist prep first. Own full L-sit + tuck front lever + pseudo-planche. Antagonist balance: planche-line push vs front-lever-line pull. Steady-state — advance the variation when the sets feel strong.", [
