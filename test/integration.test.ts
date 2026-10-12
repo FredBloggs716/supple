@@ -51,6 +51,7 @@ describe("end-to-end", () => {
     expect(health.headers.get("Content-Security-Policy")).toContain("default-src 'self'");
     expect(health.headers.get("X-Frame-Options")).toBe("DENY");
     expect(health.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(health.headers.get("Content-Security-Policy")).toContain("youtube-nocookie.com");
 
     const page = await SELF.fetch(BASE + "/");
     expect(page.status).toBe(200);

@@ -95,6 +95,14 @@ describe("validateWorkspace", () => {
     w.sessions = [session(["c1", "c2", "c3", "c4", "c5", "c6", "c7"])];
     expect(() => validateWorkspace(w)).toThrow();
   });
+  it("accepts an optional exercise videoUrl but caps its length", () => {
+    const w = base();
+    w.exercises = [{ ...exercise("e1"), videoUrl: "https://youtu.be/dQw4w9WgXcQ" }];
+    expect(() => validateWorkspace(w)).not.toThrow();
+    w.exercises = [{ ...exercise("e2"), videoUrl: "x".repeat(201) }];
+    expect(() => validateWorkspace(w)).toThrow();
+  });
+
   it("rejects invalid measurement kinds and water counts", () => {
     const w = base();
     w.clients = [client("c1", "a@x.com")];

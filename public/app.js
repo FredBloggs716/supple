@@ -667,13 +667,17 @@ if (session.user.role === "member") {
   async function exerciseModal(eid) {
     const e = exercise(eid);
     if (!e) return;
+    const yid = (String(e.videoUrl || "").match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/) || [])[1];
+    const videoPane = yid
+      ? `<iframe class="video-player" style="aspect-ratio:16/9;border:0" src="https://www.youtube-nocookie.com/embed/${yid}" title="Exercise demonstration" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>`
+      : `<div class="video-empty">${icon("video")}<h3>Your demonstration belongs here.</h3><p>Add your own video so clients can see exactly how you coach this movement.</p><label class="btn small" for="video-upload">${icon("upload")}Upload a video</label></div>`;
     openModal(
       e.name,
       `${e.category} · ${e.equipment} · ${e.prescription}`,
-      `<div id="exercise-video"><div class="video-empty">${icon("video")}<h3>Your demonstration belongs here.</h3><p>Add your own video so clients can see exactly how you coach this movement.</p><label class="btn small" for="video-upload">${icon("upload")}Upload a video</label></div></div><div style="margin:16px 0 25px"><input class="file-control" id="video-upload" type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" data-exercise="${e.id}" aria-label="Upload exercise video"><p class="field-help" style="margin-top:8px">MP4, WebM, Ogg or MOV · Up to 50 MB · Stored in your club’s private library.</p></div><h3>Coach it well.</h3><ol class="technique-list">${e.cues.map((c) => `<li>${esc(c)}</li>`).join("")}</ol>`,
+      `<div id="exercise-video">${videoPane}</div><div style="margin:16px 0 25px"${yid ? " hidden" : ""}><input class="file-control" id="video-upload" type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" data-exercise="${e.id}" aria-label="Upload exercise video"><p class="field-help" style="margin-top:8px">MP4, WebM, Ogg or MOV · Up to 50 MB · Stored in your club’s private library.</p></div><h3>Coach it well.</h3><ol class="technique-list">${e.cues.map((c) => `<li>${esc(c)}</li>`).join("")}</ol>`,
     );
     const serial = dialogSerial;
-    if (e.video) {
+    if (!yid && e.video) {
       try {
         const file = await storedVideo(eid);
         if (file && serial === dialogSerial) {

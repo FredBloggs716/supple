@@ -133,6 +133,7 @@ export function validateWorkspace(w: any): Workspace {
     text(e.name, "exercise name", 80);
     text(e.equipment, "equipment", 60);
     text(e.prescription, "exercise prescription", 40);
+    if (e.videoUrl) text(e.videoUrl, "video link", 200);
     if (!Array.isArray(e.cues) || e.cues.length < 1 || e.cues.length > 30) {
       throw new APIError("Add coaching cues for this exercise.");
     }

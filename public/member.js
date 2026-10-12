@@ -262,6 +262,16 @@ export function startMemberApp(session) {
     },
     exercise: (el) => {
       const ex = data.exercises.find((e) => e.id === el.dataset.id);
+      const videoMarkup = (empty) => {
+        const m = String(ex.videoUrl || "").match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+        if (m)
+          return `<iframe class="video-player" style="aspect-ratio:16/9;border:0" src="https://www.youtube-nocookie.com/embed/${m[1]}" title="Exercise demonstration" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+        if (ex.video)
+          return `<video class="video-player" controls playsinline preload="metadata" src="/api/videos/${encodeURIComponent(ex.id)}"></video>`;
+        return empty
+          ? '<div class="video-empty">' + icon("dumbbell") + "<h3>Your coach’s technique guide.</h3><p>A video demonstration will appear here when your coach adds one.</p></div>"
+          : "";
+      };
       if (el.closest("#member-workout")) {
         const row = el.closest(".workout-row");
         const existing = row.querySelector(".inline-technique");
@@ -271,14 +281,14 @@ export function startMemberApp(session) {
         }
         const guide = document.createElement("div");
         guide.className = "inline-technique";
-        guide.innerHTML = `${ex.video ? `<video class="video-player" controls playsinline preload="metadata" src="/api/videos/${encodeURIComponent(ex.id)}"></video>` : ""}<ol class="technique-list">${ex.cues.map((c) => `<li>${esc(c)}</li>`).join("")}</ol>`;
+        guide.innerHTML = `${videoMarkup(false)}<ol class="technique-list">${ex.cues.map((c) => `<li>${esc(c)}</li>`).join("")}</ol>`;
         row.append(guide);
         return;
       }
       modal(
         ex.name,
         `${ex.equipment} · ${ex.prescription}`,
-        `${ex.video ? `<video class="video-player" controls playsinline preload="metadata" src="/api/videos/${encodeURIComponent(ex.id)}"></video>` : '<div class="video-empty">' + icon("dumbbell") + "<h3>Your coach’s technique guide.</h3><p>A video demonstration will appear here when your coach adds one.</p></div>"}<h3 style="margin-top:20px">Coach it well.</h3><ol class="technique-list">${ex.cues.map((c) => `<li>${esc(c)}</li>`).join("")}</ol>`,
+        `${videoMarkup(true)}<h3 style="margin-top:20px">Coach it well.</h3><ol class="technique-list">${ex.cues.map((c) => `<li>${esc(c)}</li>`).join("")}</ol>`,
       );
     },
     meal: () =>
