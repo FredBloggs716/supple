@@ -1,13 +1,26 @@
-// Merge the Ascent exercise library + 10 programmes into a club via the real
-// (validated, revision-checked) coach API. Additive only. Idempotent.
-// Needs env: BASE, COOKIE (stc_session=...), CSRF.
+// Load/refresh the Ascent library + group-based programmes into a club via the
+// real validated coach API. REPLACES prior ax-/ap- content (remove then add),
+// preserves everything else. Needs env: BASE, COOKIE (stc_session=...), CSRF.
 import fs from "node:fs";
 import { exercises, programmes } from "./ascent-content.mjs";
 
-const vmap = JSON.parse(fs.readFileSync(new URL("./video-map.json", import.meta.url)));
+const map = {
+  ...JSON.parse(fs.readFileSync(new URL("./video-map.json", import.meta.url))),
+  ...JSON.parse(fs.readFileSync(new URL("./video-map-2.json", import.meta.url))),
+};
+// Exercise display names that differ from the video-map key.
+const ALIAS = {
+  "Split Squat (Hold)": "Split Squat",
+  "Inverted / Ring Row": "Inverted Row",
+  "Kettlebell Clean & Press": "Kettlebell Clean and Press",
+};
+let missing = 0;
 for (const e of exercises) {
-  if (vmap[e.name]) e.videoUrl = "https://www.youtube.com/watch?v=" + vmap[e.name];
+  const id = map[ALIAS[e.name] || e.name];
+  if (id) e.videoUrl = "https://www.youtube.com/watch?v=" + id;
+  else missing++;
 }
+if (missing) console.log(`WARN: ${missing} exercises have no video link`);
 
 const BASE = process.env.BASE;
 const headers = { cookie: process.env.COOKIE };
@@ -17,12 +30,14 @@ if (!got.workspace) {
   process.exit(1);
 }
 const ws = got.workspace;
-const exIds = new Set(ws.exercises.map((e) => e.id));
-const pgIds = new Set(ws.programmes.map((p) => p.id));
-let addedE = 0;
-let addedP = 0;
-for (const e of exercises) if (!exIds.has(e.id)) (ws.exercises.push(e), addedE++);
-for (const p of programmes) if (!pgIds.has(p.id)) (ws.programmes.push(p), addedP++);
+
+// Replace prior Ascent content.
+ws.exercises = ws.exercises.filter((e) => !e.id.startsWith("ax-")).concat(exercises);
+ws.programmes = ws.programmes.filter((p) => !p.id.startsWith("ap-")).concat(programmes);
+
+// Guard: clear any client assigned to a programme that no longer exists.
+const progIds = new Set(ws.programmes.map((p) => p.id));
+for (const c of ws.clients) if (c.programme && !progIds.has(c.programme)) c.programme = "";
 
 const put = await fetch(BASE + "/api/workspace", {
   method: "PUT",
@@ -31,7 +46,7 @@ const put = await fetch(BASE + "/api/workspace", {
 });
 const pj = await put.json().catch(() => ({}));
 console.log(
-  `PUT ${put.status} | added ${addedE} exercises, ${addedP} programmes | ` +
+  `PUT ${put.status} | ${exercises.length} exercises, ${programmes.length} programmes | ` +
     (put.ok ? `new revision ${pj.revision}` : `error: ${pj.error}`),
 );
 process.exit(put.ok ? 0 : 1);
