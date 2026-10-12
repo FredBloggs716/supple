@@ -13,13 +13,20 @@ export async function req(
   path: string,
   method = "GET",
   body?: unknown,
-  opts: { cookie?: string; csrf?: string; raw?: BodyInit; contentType?: string } = {},
+  opts: {
+    cookie?: string;
+    csrf?: string;
+    raw?: BodyInit;
+    contentType?: string;
+    headers?: Record<string, string>;
+  } = {},
 ): Promise<Res> {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (opts.contentType) headers["Content-Type"] = opts.contentType;
   if (opts.cookie) headers["Cookie"] = opts.cookie;
   if (opts.csrf) headers["X-CSRF-Token"] = opts.csrf;
+  Object.assign(headers, opts.headers || {});
   const res = await SELF.fetch(BASE + path, {
     method,
     headers,
