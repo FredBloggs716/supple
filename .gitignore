@@ -11,6 +11,7 @@ node_modules/
 *.sqlite3-shm
 
 # Cloudflare / node
+STC_SETUP_TOKEN.txt
 node_modules/
 .wrangler/
 .dev.vars

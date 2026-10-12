@@ -27,6 +27,7 @@ export async function uploadVideo(
   eid: string,
 ): Promise<Response> {
   const origin = publicOrigin(req, env);
+  if (!env.VIDEOS) throw new APIError("Video storage isn't enabled yet.", 503);
   if (user.role !== "coach") throw new APIError("Only your coach can upload exercise videos.", 403);
   const mime = (req.headers.get("Content-Type") || "").split(";")[0];
   if (!MIMES.includes(mime)) throw new APIError("Choose MP4, WebM, Ogg or MOV.", 415);
@@ -66,6 +67,7 @@ export async function serveVideo(
   head: boolean,
 ): Promise<Response> {
   const origin = publicOrigin(req, env);
+  if (!env.VIDEOS) throw new APIError("Video storage isn't enabled yet.", 503);
   const meta = await getVideoMeta(env.DB, eid);
   if (!meta) throw new APIError("Video not found.", 404);
   const headObj = await env.VIDEOS.head(meta.file);

@@ -25,6 +25,10 @@ export default defineWorkersConfig(async () => {
           singleWorker: true,
           wrangler: { configPath: "./wrangler.toml" },
           miniflare: {
+            // Production currently runs without R2 (not yet enabled on the
+            // account); the test runtime still provides it so the video code
+            // path stays covered.
+            r2Buckets: ["VIDEOS"],
             bindings: {
               TEST_MIGRATIONS: migrations,
               STC_SETUP_TOKEN: "test-setup-token",

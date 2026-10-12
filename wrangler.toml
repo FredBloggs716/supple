@@ -10,11 +10,13 @@ assets = { directory = "./public", binding = "ASSETS", run_worker_first = true }
 [[d1_databases]]
 binding = "DB"
 database_name = "supple"
-database_id = "local"   # replaced with the real id from `wrangler d1 create supple` before remote deploy
+database_id = "18ca15a4-2d0f-48f1-936e-bf6a4410b644"
 
-[[r2_buckets]]
-binding = "VIDEOS"
-bucket_name = "supple-videos"
+# Video storage. Re-enable this block (and run `wrangler r2 bucket create
+# supple-videos`) once R2 is turned on in the Cloudflare dashboard.
+# [[r2_buckets]]
+# binding = "VIDEOS"
+# bucket_name = "supple-videos"
 
 [vars]
 # Set empty for local dev. In production, leave blank to infer HTTPS from the request,
