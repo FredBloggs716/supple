@@ -11,6 +11,7 @@ import {
   UserRow,
 } from "./db";
 import { text, number, date, validateWorkspace } from "./validate";
+import { MEASURE_KINDS, testByKind } from "./tests";
 import { viewFor } from "./analytics";
 import { today } from "./time";
 import { randomHex } from "./crypto";
@@ -91,12 +92,13 @@ function applyMemberAction(w: any, user: UserRow, body: any): void {
     w.water[key] = Math.min(200, (w.water[key] || 0) + 1);
   } else if (action === "result") {
     const kind = body.kind;
-    if (!["Deadlift", "Body weight", "2 km row"].includes(kind)) {
+    if (!MEASURE_KINDS.has(kind)) {
       throw new APIError("Choose a valid measurement.");
     }
     const value = number(body.value, "result", 0.1, 10000);
-    if (kind === "2 km row" && value !== Math.trunc(value)) {
-      throw new APIError("Use whole seconds for your rowing time.");
+    const def = testByKind(kind);
+    if (def?.int && value !== Math.trunc(value)) {
+      throw new APIError("Use whole numbers for this test.");
     }
     w.measures.push({ id: recordId, client: cid, kind, value, date: date(body.date, false) });
   } else if (action === "checkin") {

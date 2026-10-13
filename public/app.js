@@ -1,6 +1,7 @@
 import { seedData, TODAY, dayKey, offsetDay, mondayOf } from "./data.js";
 import { icon } from "./icons.js";
 import { api, bootAuth, logout } from "./auth.js";
+import { TEST_POOL, weeklyTests, testByKind, formatResult } from "./tests.js";
 const session = await bootAuth();
 if (session.user.role === "member") {
   const { startMemberApp } = await import("./member.js");
@@ -425,11 +426,13 @@ if (session.user.role === "member") {
   }
   function progressPage() {
     const c = client(ui.selectedClient) || data.clients[0];
+    const kinds = [...new Set([...weeklyTests(TODAY).map((t) => t.kind), "Body weight", ...data.measures.filter((m) => m.client === c?.id).map((m) => m.kind)])];
+    if (!kinds.includes(ui.progress)) ui.progress = kinds[0];
     const points = data.measures
       .filter((m) => m.client === c.id && m.kind === ui.progress)
       .sort((a, b) => a.date.localeCompare(b.date))
       .slice(-8);
-    return `${heading("See the work add up.", "Progress comes in more than one number. Keep the whole picture in view.", selectClient(), "PERSONAL PROGRESS")}<div class="metrics-grid section-gap"><div class="metric"><small>Latest deadlift</small><strong>${latestMeasure(c.id, "Deadlift") ?? "—"} <small>kg</small></strong><span>Strength you can measure</span></div><div class="metric"><small>Sessions this week</small><strong>${totalAttendance(c.id)} <small>sessions</small></strong><span>Every session counts</span></div><div class="metric"><small>Training streak</small><strong>${c.streak} <small>weeks</small></strong><span>Building a lasting habit</span></div></div><div class="two-col"><section class="panel large-chart"><div class="panel-head"><div><h2>${esc(c.name.split(" ")[0])}’s progress</h2><p class="panel-sub">Your latest 8 logged results</p></div>${btn("Log result", "log-result", "plus", "small")}</div><div class="chart-options"><div class="tabs">${["Deadlift", "Body weight", "2 km row"].map((m) => `<button class="tab ${ui.progress === m ? "active" : ""}" data-action="progress-metric" data-value="${m}">${m}</button>`).join("")}</div><span class="muted" style="font-size:10px">${ui.progress === "2 km row" ? "seconds" : "kg"}</span></div><div class="chart-wrap">${
+    return `${heading("See the work add up.", "Progress comes in more than one number. Keep the whole picture in view.", selectClient(), "PERSONAL PROGRESS")}<div class="metrics-grid section-gap"><div class="metric"><small>Latest deadlift</small><strong>${latestMeasure(c.id, "Deadlift") ?? "—"} <small>kg</small></strong><span>Strength you can measure</span></div><div class="metric"><small>Sessions this week</small><strong>${totalAttendance(c.id)} <small>sessions</small></strong><span>Every session counts</span></div><div class="metric"><small>Training streak</small><strong>${c.streak} <small>weeks</small></strong><span>Building a lasting habit</span></div></div><div class="two-col"><section class="panel large-chart"><div class="panel-head"><div><h2>${esc(c.name.split(" ")[0])}’s progress</h2><p class="panel-sub">Your latest 8 logged results</p></div>${btn("Log result", "log-result", "plus", "small")}</div><div class="chart-options"><div class="tabs">${[...new Set([...weeklyTests(TODAY).map((t) => t.kind), "Body weight", ...data.measures.filter((m) => m.client === c.id).map((m) => m.kind)])].map((m) => `<button class="tab ${ui.progress === m ? "active" : ""}" data-action="progress-metric" data-value="${esc(m)}">${esc(m)}</button>`).join("")}</div><span class="muted" style="font-size:10px">${testByKind(ui.progress)?.unit || "kg"}</span></div><div class="chart-wrap">${
       points.length
         ? chartSVG(
             points.map((p) => p.value),
@@ -455,21 +458,31 @@ if (session.user.role === "member") {
   }
   function leaderboardPage() {
     const w = winner();
+    const weekly = weeklyTests(TODAY);
+    if (ui.board !== "Attendance" && !weekly.some((t) => t.kind === ui.board))
+      ui.board = "Attendance";
+    const weekVal = (cid, kind) => {
+      const l = data.measures
+        .filter((m) => m.client === cid && m.kind === kind && m.date >= mondayOf(TODAY) && m.date <= TODAY)
+        .sort((a, b) => (a.date < b.date ? -1 : 1));
+      return l.length ? l[l.length - 1].value : null;
+    };
+    const testsDone = (cid) => weekly.filter((t) => weekVal(cid, t.kind) != null).length;
+    const boardTest = weekly.find((t) => t.kind === ui.board);
     const list = [...data.clients]
       .filter(
-        (c) =>
-          ui.board === "Attendance" || latestMeasure(c.id, ui.board) != null,
+        (c) => ui.board === "Attendance" || weekVal(c.id, ui.board) != null,
       )
       .sort((a, b) =>
         ui.board === "Attendance"
           ? totalAttendance(b.id) - totalAttendance(a.id) ||
             b.adherence - a.adherence
-          : ui.board === "2 km row"
-            ? latestMeasure(a.id, ui.board) - latestMeasure(b.id, ui.board)
-            : latestMeasure(b.id, ui.board) - latestMeasure(a.id, ui.board),
+          : boardTest?.dir === "lower"
+            ? weekVal(a.id, ui.board) - weekVal(b.id, ui.board)
+            : weekVal(b.id, ui.board) - weekVal(a.id, ui.board),
       );
     const count = totalAttendance();
-    return `${heading("A little friendly competition.", "Celebrate the effort. Share the wins. Bring each other along.", btn("Log a result", "log-result", "plus", "accent"), "STRONGER TOGETHER")}<div class="leader-hero"><div><div class="eyebrow">THE SOCIAL TRAINING CLUB</div><h2>Different starting points.<br>One team.</h2><p>There’s a place on the board for showing up, too.</p></div>${icon("trophy")}</div><div class="two-col"><section class="panel"><div class="panel-head"><div><h2>The club leaderboard</h2><p class="panel-sub">${ui.board === "Attendance" ? "This week · " + dateLabel(mondayOf(TODAY)) + " – " + dateLabel(offsetDay(mondayOf(TODAY), 6)) : "Latest recorded result for each member"}</p></div>${pill(ui.board === "Attendance" ? "Weekly reset" : "Benchmarks", "neutral")}</div><div class="chart-options" style="padding-bottom:18px"><div class="tabs">${["Attendance", "Deadlift", "2 km row"].map((t) => `<button class="tab ${ui.board === t ? "active" : ""}" data-action="board" data-value="${t}">${t}</button>`).join("")}</div></div><div class="table-wrap"><table class="leader-table"><thead><tr><th>Rank</th><th>Club member</th><th>${ui.board === "Attendance" ? "Sessions" : ui.board === "Deadlift" ? "Load" : "Time"}</th><th>Club points</th></tr></thead><tbody>${list.map((c, i) => `<tr><td><span class="rank ${i < 3 ? "top" : ""}">${String(i + 1).padStart(2, "0")}</span></td><td><button class="client-cell client-name" data-action="client" data-id="${c.id}">${avatar(c)}<span><strong>${esc(c.name)}</strong><small>${c.streak} week streak</small></span></button></td><td class="mono">${ui.board === "Attendance" ? totalAttendance(c.id) : ui.board === "2 km row" ? Math.floor(latestMeasure(c.id, ui.board) / 60) + ":" + String(Math.round(latestMeasure(c.id, ui.board) % 60)).padStart(2, "0") : latestMeasure(c.id, ui.board) + " kg"}</td><td>${pill(totalAttendance(c.id) * 50 + " XP", i === 0 ? "success" : "neutral")}</td></tr>`).join("")}</tbody></table></div></section><div class="stack"><section class="panel award-card">${icon("trophy")}<div class="eyebrow" style="color:#92724a;margin-bottom:24px">TRAINER OF THE WEEK</div>${totalAttendance(w.id) ? avatar(w, true) : ""}<h3>${totalAttendance(w.id) ? esc(w.name) : "Your next session counts."}</h3><p>${totalAttendance(w.id)} sessions this week.<br>Keep showing up together.</p><div style="margin-top:17px">${totalAttendance(w.id) ? pill("Showing up champion", "success") : pill("A fresh week", "neutral")}</div><div class="award-rule">Awarded to the member with the most logged sessions this week. Adherence breaks a tie.</div></section><section class="panel challenge">${pill("CLUB CHALLENGE", "neutral")}<h3>${weeklyGoal()} sessions. One club.</h3><p>A shared goal for the week. Every completed session moves us forward.</p><div class="challenge-meta"><strong>${count} / ${weeklyGoal()} sessions</strong><span class="muted">${Math.min(100, Math.round((count / Math.max(1, weeklyGoal())) * 100))}%</span></div><div class="progress-track"><i style="width:${Math.min(100, (count / Math.max(1, weeklyGoal())) * 100)}%"></i></div><p style="margin:14px 0 0;font-size:10px">50 XP per session · Attendance points reset each week.</p></section></div></div>`;
+    return `${heading("A little friendly competition.", "Celebrate the effort. Share the wins. Bring each other along.", btn("Log a result", "log-result", "plus", "accent"), "STRONGER TOGETHER")}<div class="leader-hero"><div><div class="eyebrow">THE SOCIAL TRAINING CLUB</div><h2>Different starting points.<br>One team.</h2><p>There’s a place on the board for showing up, too.</p></div>${icon("trophy")}</div><div class="two-col"><section class="panel"><div class="panel-head"><div><h2>The club leaderboard</h2><p class="panel-sub">${ui.board === "Attendance" ? "This week · " + dateLabel(mondayOf(TODAY)) + " – " + dateLabel(offsetDay(mondayOf(TODAY), 6)) : "This week's test · best result logged " + dateLabel(mondayOf(TODAY)) + " – " + dateLabel(offsetDay(mondayOf(TODAY), 6))}</p></div>${pill(ui.board === "Attendance" ? "Weekly reset" : "Rotates weekly", "neutral")}</div><div class="chart-options" style="padding-bottom:18px"><div class="tabs">${["Attendance", ...weekly.map((t) => t.kind)].map((t) => `<button class="tab ${ui.board === t ? "active" : ""}" data-action="board" data-value="${esc(t)}">${esc(t)}</button>`).join("")}</div></div><div class="table-wrap"><table class="leader-table"><thead><tr><th>Rank</th><th>Club member</th><th>${ui.board === "Attendance" ? "Sessions" : "Result"}</th><th>${ui.board === "Attendance" ? "Tests + points" : "Club points"}</th></tr></thead><tbody>${list.map((c, i) => `<tr><td><span class="rank ${i < 3 ? "top" : ""}">${String(i + 1).padStart(2, "0")}</span></td><td><button class="client-cell client-name" data-action="client" data-id="${c.id}">${avatar(c)}<span><strong>${esc(c.name)}</strong><small>${c.streak} week streak</small></span></button></td><td class="mono">${ui.board === "Attendance" ? totalAttendance(c.id) : formatResult(ui.board, weekVal(c.id, ui.board))}</td><td>${ui.board === "Attendance" ? pill(testsDone(c.id) + "/3 tests", testsDone(c.id) ? "success" : "neutral") + " " + pill(totalAttendance(c.id) * 50 + " XP", i === 0 ? "success" : "neutral") : pill(totalAttendance(c.id) * 50 + " XP", i === 0 ? "success" : "neutral")}</td></tr>`).join("")}</tbody></table></div></section><div class="stack"><section class="panel award-card">${icon("trophy")}<div class="eyebrow" style="color:#92724a;margin-bottom:24px">TRAINER OF THE WEEK</div>${totalAttendance(w.id) ? avatar(w, true) : ""}<h3>${totalAttendance(w.id) ? esc(w.name) : "Your next session counts."}</h3><p>${totalAttendance(w.id)} sessions this week.<br>Keep showing up together.</p><div style="margin-top:17px">${totalAttendance(w.id) ? pill("Showing up champion", "success") : pill("A fresh week", "neutral")}</div><div class="award-rule">Awarded to the member with the most logged sessions this week. Adherence breaks a tie.</div></section><section class="panel challenge">${pill("CLUB CHALLENGE", "neutral")}<h3>${weeklyGoal()} sessions. One club.</h3><p>A shared goal for the week. Every completed session moves us forward.</p><div class="challenge-meta"><strong>${count} / ${weeklyGoal()} sessions</strong><span class="muted">${Math.min(100, Math.round((count / Math.max(1, weeklyGoal())) * 100))}%</span></div><div class="progress-track"><i style="width:${Math.min(100, (count / Math.max(1, weeklyGoal())) * 100)}%"></i></div><p style="margin:14px 0 0;font-size:10px">50 XP per session · Attendance points reset each week.</p></section></div></div>`;
   }
   function schedulePage() {
     return `${heading("Make time for progress.", "Your week, with a little more structure.", btn("Add session", "create-session", "plus", "accent"), "THE CLUB CALENDAR")}<section class="panel"><div class="panel-head"><div><h2>${dateLabel(ui.day, { month: "long", year: "numeric" })}</h2><p class="panel-sub">Times shown in Europe/London</p></div><div class="heading-actions"><button class="icon-btn" data-action="week-prev" aria-label="Previous week">${icon("left")}</button>${btn("Today", "today", "", "small")}<button class="icon-btn" data-action="week-next" aria-label="Next week">${icon("chevron")}</button></div></div>${dateStrip(true)}<div class="panel-head"><h2>${dateLabel(ui.day, { weekday: "long", day: "numeric", month: "long" })}</h2>${pill(data.sessions.filter((s) => s.date === ui.day).length + " sessions", "neutral")}</div><div class="schedule-list">${sessionRows(true)}</div></section>`;
@@ -617,18 +630,26 @@ if (session.user.role === "member") {
     openModal(
       "Make progress visible.",
       "Record a benchmark. Keep the conditions consistent each time.",
-      `<form id="result-form"><label class="field"><span>Club member</span><select name="client">${clientOptions()}</select></label><div class="form-grid"><label class="field"><span>Measurement</span><select name="kind" id="result-kind">${["Deadlift", "Body weight", "2 km row"].map((k) => `<option ${k === (ui.route === "leaderboard" && ui.board !== "Attendance" ? ui.board : ui.progress) ? "selected" : ""}>${k}</option>`).join("")}</select></label><label class="field"><span id="result-unit">Result</span><input name="value" type="number" min="0.1" max="10000" step="0.1" required placeholder="Enter result"></label><label class="field span-2"><span>Date</span><input name="date" type="date" max="${TODAY}" value="${TODAY}" required></label></div><p class="field-help">Deadlift and body weight are measured in kg. Enter the total time in seconds for the 2 km row. Benchmarks appear on the club board; body weight stays in personal progress.</p>${formFooter("Save result", "chart")}</form>`,
+      `<form id="result-form"><label class="field"><span>Club member</span><select name="client">${clientOptions()}</select></label><div class="form-grid"><label class="field"><span>Measurement</span><select name="kind" id="result-kind">${(() => {
+        const weekly = weeklyTests(TODAY).map((t) => t.kind);
+        const selected = ui.route === "leaderboard" && ui.board !== "Attendance" ? ui.board : ui.progress;
+        const kinds = [...weekly, "Body weight", ...TEST_POOL.map((t) => t.kind).filter((k) => !weekly.includes(k))];
+        return `<optgroup label="This week's tests">${weekly.map((k) => `<option value="${esc(k)}" ${k === selected ? "selected" : ""}>${esc(k)}</option>`).join("")}</optgroup><optgroup label="All measurements">${kinds.slice(3).map((k) => `<option value="${esc(k)}" ${k === selected ? "selected" : ""}>${esc(k)}</option>`).join("")}</optgroup>`;
+      })()}</select></label><label class="field"><span id="result-unit">Result</span><input name="value" type="number" min="0.1" max="10000" step="0.1" required placeholder="Enter result"></label><label class="field span-2"><span>Date</span><input name="date" type="date" max="${TODAY}" value="${TODAY}" required></label></div><p class="field-help">This week's three tests count on the club board; the whole pool stays available for extra benchmarks. Body weight stays in personal progress.</p>${formFooter("Save result", "chart")}</form>`,
     );
     updateResultUnit();
   }
   function updateResultUnit() {
     const el = $("#result-kind");
     if (el) {
-      $("#result-unit").textContent =
-        el.value === "2 km row" ? "Time (seconds)" : "Result (kg)";
+      const t = testByKind(el.value);
+      const unitLabel = !t
+        ? "Result (kg)"
+        : { reps: "Result (reps)", s: t.dir === "lower" ? "Time (seconds)" : "Hold (seconds)", kg: "Result (kg)", cm: "Distance (cm)" }[t.unit];
+      $("#result-unit").textContent = unitLabel;
       const input = $("#result-form input[name=value]");
-      input.step = el.value === "2 km row" ? "1" : "0.1";
-      input.min = el.value === "2 km row" ? "1" : "0.1";
+      input.step = t && t.int ? "1" : "0.1";
+      input.min = t && t.int ? "1" : "0.1";
     }
   }
   function createSessionModal() {

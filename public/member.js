@@ -1,6 +1,7 @@
 import { api, logout } from "./auth.js";
 import { icon } from "./icons.js";
 import { TODAY, mondayOf, offsetDay } from "./data.js";
+import { weeklyTests, testByKind, formatResult } from "./tests.js";
 export function startMemberApp(session) {
   let data = session.workspace,
     route = "today",
@@ -162,7 +163,9 @@ export function startMemberApp(session) {
     return `<div class="chart-wrap"><svg viewBox="0 0 570 205" role="img" aria-label="${esc(points.map((p) => dateLabel(p.date) + ": " + p.value).join(", "))}">${[0, 1, 2, 3].map((i) => `<line x1="35" x2="535" y1="${y((max * i) / 3)}" y2="${y((max * i) / 3)}" stroke="#e6e9f0"/><text x="25" y="${y((max * i) / 3) + 4}" text-anchor="end">${Math.round((max * i) / 3)}</text>`).join("")}<polyline points="${values.map((v, i) => x(i) + "," + y(v)).join(" ")}" fill="none" stroke="#002c8c" stroke-width="3"/>${points.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.value)}" r="4" fill="#002c8c"/><text x="${x(i)}" y="200" text-anchor="middle">${dateLabel(p.date)}</text>`).join("")}</svg></div>`;
   }
   function progressPage() {
-    return `${title("See the work add up.", "Keep a clear picture of your own progress.", btn("Log result", "result", "plus", "accent"))}<div class="metrics-grid section-gap">${metric("Latest deadlift", latest("Deadlift") ?? "—", "kg")}${metric("Latest body weight", latest("Body weight") ?? "—", "kg")}${metric("This week", count(), "sessions")}</div><section class="panel large-chart"><div class="panel-head"><h2>Your progress</h2><span class="pill neutral">Latest 8 results</span></div><div class="chart-options"><div class="tabs">${["Deadlift", "Body weight", "2 km row"].map((k) => `<button class="tab ${resultKind === k ? "active" : ""}" data-member-action="metric" data-value="${k}">${k}</button>`).join("")}</div></div>${progressChart()}<div class="panel-footer"><span>${resultKind === "Body weight" ? "Your body weight is private to you and your coach." : "Keep the conditions consistent between tests."}</span></div></section>`;
+    const kinds = [...new Set([...weeklyTests(TODAY).map((t) => t.kind), "Body weight", ...data.measures.map((m) => m.kind)])];
+    if (!kinds.includes(resultKind)) resultKind = kinds[0];
+    return `${title("See the work add up.", "Keep a clear picture of your own progress.", btn("Log result", "result", "plus", "accent"))}<div class="metrics-grid section-gap">${metric("Latest deadlift", latest("Deadlift") ?? "—", "kg")}${metric("Latest body weight", latest("Body weight") ?? "—", "kg")}${metric("This week", count(), "sessions")}</div><section class="panel large-chart"><div class="panel-head"><h2>Your progress</h2><span class="pill neutral">Latest 8 results</span></div><div class="chart-options"><div class="tabs">${[...new Set([...weeklyTests(TODAY).map((t) => t.kind), "Body weight", ...data.measures.map((m) => m.kind)])].map((k) => `<button class="tab ${resultKind === k ? "active" : ""}" data-member-action="metric" data-value="${esc(k)}">${esc(k)}</button>`).join("")}</div></div>${progressChart()}<div class="panel-footer"><span>${resultKind === "Body weight" ? "Your body weight is private to you and your coach." : "Keep the conditions consistent between tests."}</span></div></section>`;
   }
   function exerciseCards(query = "") {
     const list = data.exercises.filter((e) =>
@@ -186,20 +189,20 @@ export function startMemberApp(session) {
     return `${title("Move with confidence.", "Your coach’s cues and demonstrations, in one place.")}<div class="toolbar"><label class="search-field">${icon("search")}<input id="member-exercise-search" type="search" placeholder="Search exercises..." aria-label="Search exercises"></label></div><div class="cards-grid" id="member-exercises">${exerciseCards()}</div>`;
   }
   function clubPage() {
+    const weekly = weeklyTests(TODAY);
+    if (board !== "Attendance" && !weekly.some((t) => t.kind === board))
+      board = "Attendance";
+    const boardTest = weekly.find((t) => t.kind === board);
     const list = rows
-      .filter(
-        (r) =>
-          board === "Attendance" ||
-          r[board === "Deadlift" ? "deadlift" : "row"] != null,
-      )
+      .filter((r) => board === "Attendance" || r.tests?.[board] != null)
       .sort((a, b) =>
         board === "Attendance"
           ? b.sessions - a.sessions || b.adherence - a.adherence
-          : board === "Deadlift"
-            ? b.deadlift - a.deadlift
-            : a.row - b.row,
+          : boardTest?.dir === "lower"
+            ? a.tests[board] - b.tests[board]
+            : b.tests[board] - a.tests[board],
       );
-    return `${title("A little friendly competition.", "Your club. Your people. Celebrate showing up.")}<div class="leader-hero"><div><div class="eyebrow">STRONGER TOGETHER</div><h2>Different starting points.<br>One team.</h2><p>Every session counts. Earn 50 XP each time you train.</p></div>${icon("trophy")}</div>${!member().leaderboardOptIn ? '<div class="tip section-gap">' + icon("shield") + "<div><strong>You control what you share.</strong>Turn on club participation in My account to share your attendance and benchmarks. Body weight and coach notes always stay private.</div></div>" : ""}<section class="panel"><div class="panel-head"><h2>The club leaderboard</h2><span class="pill neutral">${board === "Attendance" ? "This week" : "Latest results"}</span></div><div class="chart-options" style="padding-bottom:17px"><div class="tabs">${["Attendance", "Deadlift", "2 km row"].map((k) => `<button class="tab ${board === k ? "active" : ""}" data-member-action="board" data-value="${k}">${k}</button>`).join("")}</div></div><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Club member</th><th>${board === "Attendance" ? "Sessions" : board === "Deadlift" ? "Load" : "Time"}</th><th>Club points</th></tr></thead><tbody>${list.map((r, i) => `<tr><td><span class="rank ${i === 0 ? "top" : ""}">${String(i + 1).padStart(2, "0")}</span></td><td><strong>${esc(r.name)}</strong>${r.id === member().id ? '<span class="pill neutral" style="margin-left:8px">You</span>' : ""}</td><td class="mono">${board === "Attendance" ? r.sessions : board === "Deadlift" ? r.deadlift + " kg" : Math.floor(r.row / 60) + ":" + String(r.row % 60).padStart(2, "0")}</td><td><span class="pill success">${r.sessions * 50} XP</span></td></tr>`).join("") || '<tr><td colspan="4">No benchmarks yet. Your next result can start the board.</td></tr>'}</tbody></table></div></section>`;
+    return `${title("A little friendly competition.", "Your club. Your people. Celebrate showing up.")}<div class="leader-hero"><div><div class="eyebrow">STRONGER TOGETHER</div><h2>Different starting points.<br>One team.</h2><p>Every session counts. Earn 50 XP each time you train.</p></div>${icon("trophy")}</div>${!member().leaderboardOptIn ? '<div class="tip section-gap">' + icon("shield") + "<div><strong>You control what you share.</strong>Turn on club participation in My account to share your attendance and benchmarks. Body weight and coach notes always stay private.</div></div>" : ""}<section class="panel"><div class="panel-head"><h2>The club leaderboard</h2><span class="pill neutral">${board === "Attendance" ? "This week" : "This week's test"}</span></div><div class="chart-options" style="padding-bottom:17px"><div class="tabs">${["Attendance", ...weekly.map((t) => t.kind)].map((k) => `<button class="tab ${board === k ? "active" : ""}" data-member-action="board" data-value="${esc(k)}">${esc(k)}</button>`).join("")}</div></div><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Club member</th><th>${board === "Attendance" ? "Sessions" : "Result"}</th><th>${board === "Attendance" ? "Tests + points" : "Club points"}</th></tr></thead><tbody>${list.map((r, i) => `<tr><td><span class="rank ${i === 0 ? "top" : ""}">${String(i + 1).padStart(2, "0")}</span></td><td><strong>${esc(r.name)}</strong>${r.id === member().id ? '<span class="pill neutral" style="margin-left:8px">You</span>' : ""}</td><td class="mono">${board === "Attendance" ? r.sessions : formatResult(board, r.tests[board])}</td><td>${board === "Attendance" ? `<span class="pill ${r.testsThisWeek ? "success" : "neutral"}">${r.testsThisWeek ?? 0}/3 tests</span> <span class="pill success">${r.sessions * 50} XP</span>` : `<span class="pill success">${r.sessions * 50} XP</span>`}</td></tr>`).join("") || '<tr><td colspan="4">No results logged this week yet. Your next result can start the board.</td></tr>'}</tbody></table></div></section>`;
   }
   function accountPage() {
     return `${title("Your corner of the club.", "A few details, just for you.")}<div class="two-col"><section class="panel panel-pad"><div class="profile-head">${avatar()}<div><h3>${esc(member().name)}</h3><p>${esc(member().email)}</p></div></div><div class="info-row"><span>Your coach</span><strong>${esc(data.settings.coach)}</strong></div><div class="info-row"><span>Your goal</span><strong>${esc(member().goal)}</strong></div><form id="member-privacy"><div class="settings-row"><div><strong>Join the club leaderboard</strong><p>Share your first name, last initial, attendance and training benchmarks with signed-in club members. Your body weight stays private.</p></div><label class="switch"><input name="optIn" type="checkbox" ${member().leaderboardOptIn ? "checked" : ""} aria-label="Join the club leaderboard"><span></span></label></div><button class="btn primary" type="submit">Save preference${icon("check")}</button></form></section><section class="panel panel-pad"><h2>Your sign-in details</h2><p class="muted" style="font-size:12px;line-height:1.8;margin:13px 0 22px">Your records are shared only with your coach. Sign out when you finish on a shared device.</p><div class="account-actions">${btn("Change password", "password", "shield", "full")}${btn("Sign out", "logout", "arrow", "full")}</div></section></div>`;
@@ -321,7 +324,7 @@ export function startMemberApp(session) {
       modal(
         "Make progress visible.",
         "A benchmark is a starting point, not a judgement.",
-        `<form id="member-result"><label class="field"><span>Measurement</span><select name="kind" id="member-kind">${["Deadlift", "Body weight", "2 km row"].map((k) => `<option ${k === resultKind ? "selected" : ""}>${k}</option>`).join("")}</select></label><div class="form-grid"><label class="field"><span>Result (kg, or seconds for rowing)</span><input name="value" type="number" min="0.1" max="10000" step="0.1" required></label><label class="field"><span>Date</span><input name="date" type="date" max="${TODAY}" value="${TODAY}" required></label></div>${footer("Save result")}</form>`,
+        `<form id="member-result"><label class="field"><span>Measurement</span><select name="kind" id="member-kind">${[...weeklyTests(TODAY).map((t) => t.kind), "Body weight"].map((k) => { const t = testByKind(k); const unit = !t ? "kg" : t.unit === "s" ? "seconds" : t.unit; return `<option value="${esc(k)}" ${k === resultKind ? "selected" : ""}>${esc(k)} · ${unit}</option>`; }).join("")}</select></label><p class="field-help" style="margin:-6px 0 12px">This week's three club tests rotate every Monday — log them to join the board. Whole numbers for reps and seconds. Body weight stays private.</p><div class="form-grid"><label class="field"><span>Result</span><input name="value" type="number" min="0.1" max="10000" step="0.1" required></label><label class="field"><span>Date</span><input name="date" type="date" max="${TODAY}" value="${TODAY}" required></label></div>${footer("Save result")}</form>`,
       ),
     password: () =>
       modal(

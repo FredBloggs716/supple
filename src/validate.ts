@@ -3,6 +3,7 @@
 // of data may be stored, and (with analytics.viewFor) underpins client isolation.
 import { APIError } from "./http";
 import { today } from "./time";
+import { MEASURE_KINDS } from "./tests";
 
 export type Workspace = any;
 
@@ -149,7 +150,7 @@ export function validateWorkspace(w: any): Workspace {
     }
   }
   for (const m of w.measures) {
-    if (!["Deadlift", "Body weight", "2 km row"].includes(m.kind)) {
+    if (!MEASURE_KINDS.has(m.kind)) {
       throw new APIError("Invalid measurement type.");
     }
     number(m.value, "result", 0.1, 10000);

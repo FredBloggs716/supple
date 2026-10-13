@@ -4,6 +4,7 @@ import { Env, publicOrigin } from "./env";
 import { getWorkspace, UserRow } from "./db";
 import { analytics } from "./analytics";
 import { today } from "./time";
+import { weeklyTests } from "./tests";
 
 function mondayIso(): string {
   const now = new Date(today() + "T00:00:00Z");
@@ -22,6 +23,7 @@ export async function leaderboard(req: Request, env: Env, user: UserRow): Promis
   analytics(w); // populates streak + adherence
   const monday = mondayIso();
   const now = today();
+  const weekly = weeklyTests(now);
   const rows: any[] = [];
 
   for (const c of w.clients) {
@@ -45,7 +47,21 @@ export async function leaderboard(req: Request, env: Env, user: UserRow): Promis
         .sort((a: any, b: any) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
       row[key] = results.length ? results[results.length - 1].value : null;
     }
+    // This week's rotating test battery: latest value logged this week per test.
+    row.tests = {};
+    let done = 0;
+    for (const t of weekly) {
+      const results = w.measures
+        .filter(
+          (m: any) =>
+            m.client === c.id && m.kind === t.kind && m.date >= monday && m.date <= now,
+        )
+        .sort((a: any, b: any) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+      row.tests[t.kind] = results.length ? results[results.length - 1].value : null;
+      if (results.length) done++;
+    }
+    row.testsThisWeek = done;
     rows.push(row);
   }
-  return json({ rows }, 200, {}, origin);
+  return json({ weekly, rows }, 200, {}, origin);
 }
