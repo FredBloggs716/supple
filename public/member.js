@@ -84,10 +84,16 @@ export function startMemberApp(session) {
     return `<div class="metric"><small>${esc(label)}</small><strong>${esc(value)} <small>${esc(unit)}</small></strong><span>One step at a time.</span></div>`;
   }
   function programmeRows(check = false) {
+    const thumb = (e) => {
+      const m = String(e.videoUrl || "").match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+      return m
+        ? `<button class="workout-thumb-btn" data-member-action="exercise" data-id="${e.id}" aria-label="Watch ${esc(e.name)} demonstration"><img src="https://i.ytimg.com/vi/${m[1]}/mqdefault.jpg" alt="" loading="lazy">${icon("play")}</button>`
+        : "";
+    };
     return plan()
       .exercises.map((item, i) => {
         const e = data.exercises.find((e) => e.id === item.id);
-        return `<div class="workout-row"><span class="workout-index">${String(i + 1).padStart(2, "0")}</span><div><strong>${esc(e.name)}</strong><small>${esc(item.sets)} · ${esc(e.equipment)}</small><button class="text-link" style="font-size:10px;margin-top:7px" data-member-action="exercise" data-id="${e.id}">Technique guide${icon("play")}</button></div>${check ? `<div class="set-log"><label>Load (kg)<input name="weight-${e.id}" type="number" min="0" max="1000" step="0.5" value="0" aria-label="${esc(e.name)} load in kg"></label><label>Reps<input name="reps-${e.id}" type="number" min="1" max="1000" value="10" aria-label="${esc(e.name)} reps"></label><label class="done-check"><input type="checkbox" name="complete" value="${e.id}" required>Done</label></div>` : `<span class="mono">${esc(item.sets)}</span>`}</div>`;
+        return `<div class="workout-row"><span class="workout-index">${String(i + 1).padStart(2, "0")}</span>${thumb(e)}<div><strong>${esc(e.name)}</strong><small>${esc(item.sets)} · ${esc(e.equipment)}</small><button class="text-link" style="font-size:10px;margin-top:7px" data-member-action="exercise" data-id="${e.id}">Technique guide${icon("play")}</button></div>${check ? `<div class="set-log"><label>Load (kg)<input name="weight-${e.id}" type="number" min="0" max="1000" step="0.5" value="0" aria-label="${esc(e.name)} load in kg"></label><label>Reps<input name="reps-${e.id}" type="number" min="1" max="1000" value="10" aria-label="${esc(e.name)} reps"></label><label class="done-check"><input type="checkbox" name="complete" value="${e.id}">Done</label></div>` : `<span class="mono">${esc(item.sets)}</span>`}</div>`;
       })
       .join("");
   }

@@ -551,7 +551,11 @@ if (session.user.role === "member") {
       `<p style="font-size:12px;line-height:1.8;margin-bottom:20px">${esc(p.description)}</p><div class="section-label">The session</div>${p.exercises
         .map((item, i) => {
           const e = exercise(item.id);
-          return `<div class="workout-row"><span class="workout-index">${String(i + 1).padStart(2, "0")}</span><div><strong>${esc(e?.name || "Exercise")}</strong><small>${esc(e?.equipment || "")}</small></div><span>${esc(item.sets)}</span></div>`;
+          const m = String(e?.videoUrl || "").match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+          const thumb = m
+            ? `<button class="workout-thumb-btn" data-action="exercise" data-id="${e.id}" aria-label="Watch ${esc(e.name)} demonstration"><img src="https://i.ytimg.com/vi/${m[1]}/mqdefault.jpg" alt="" loading="lazy">${icon("play")}</button>`
+            : "";
+          return `<div class="workout-row"><span class="workout-index">${String(i + 1).padStart(2, "0")}</span>${thumb}<div>${e ? `<button class="client-name" data-action="exercise" data-id="${e.id}"><strong>${esc(e.name)}</strong></button>` : "<strong>Exercise</strong>"}<small>${esc(e?.equipment || "")}</small></div><span>${esc(item.sets)}</span></div>`;
         })
         .join(
           "",
