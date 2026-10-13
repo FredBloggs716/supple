@@ -63,6 +63,13 @@ export function startMemberApp(session) {
     data.logs
       .filter((l) => l.date >= mondayOf(TODAY) && l.date <= TODAY)
       .reduce((s, l) => s + xpFor(l), 0);
+  const sessionToday = () =>
+    plan() && data.logs.find((l) => l.date === TODAY && l.programme === plan().id);
+  const startLabel = (full) => {
+    const l = sessionToday();
+    if (!l) return full ? "Start your session" : "Start session";
+    return (l.completedCount ?? 1) >= (l.exerciseCount ?? 1) ? "Session done — review" : "Continue today's session";
+  };
   const results = () =>
     data.measures
       .filter((m) => m.kind === resultKind)
@@ -98,10 +105,13 @@ export function startMemberApp(session) {
         ? `<button class="workout-thumb-btn" data-member-action="exercise" data-id="${e.id}" aria-label="Watch ${esc(e.name)} demonstration"><img src="https://i.ytimg.com/vi/${m[1]}/mqdefault.jpg" alt="" loading="lazy">${icon("play")}</button>`
         : "";
     };
+    const todayLog = data.logs.find((l) => l.date === TODAY && l.programme === plan().id);
+    const doneToday = new Map((todayLog?.entries || []).map((en) => [en.exercise, en]));
     return plan()
       .exercises.map((item, i) => {
         const e = data.exercises.find((e) => e.id === item.id);
-        return `<div class="workout-row"><span class="workout-index">${String(i + 1).padStart(2, "0")}</span>${thumb(e)}<div><strong>${esc(e.name)}</strong><small>${esc(item.sets)} · ${esc(e.equipment)}</small><button class="text-link" style="font-size:10px;margin-top:7px" data-member-action="exercise" data-id="${e.id}">Technique guide${icon("play")}</button></div>${check ? `<div class="set-log"><label>Load (kg)<input name="weight-${e.id}" type="number" min="0" max="1000" step="0.5" value="0" aria-label="${esc(e.name)} load in kg"></label><label>Reps<input name="reps-${e.id}" type="number" min="1" max="1000" value="10" aria-label="${esc(e.name)} reps"></label><label class="done-check"><input type="checkbox" name="complete" value="${e.id}">Done</label></div>` : `<span class="mono">${esc(item.sets)}</span>`}</div>`;
+        const prior = doneToday.get(e.id);
+        return `<div class="workout-row"><span class="workout-index">${String(i + 1).padStart(2, "0")}</span>${thumb(e)}<div><strong>${esc(e.name)}</strong><small>${esc(item.sets)} · ${esc(e.equipment)}</small><button class="text-link" style="font-size:10px;margin-top:7px" data-member-action="exercise" data-id="${e.id}">Technique guide${icon("play")}</button></div>${check ? (prior ? `<div class="set-log"><span class="pill success">Done today · ${prior.weight} kg × ${prior.reps}</span></div>` : `<div class="set-log"><label>Load (kg)<input name="weight-${e.id}" type="number" min="0" max="1000" step="0.5" value="0" aria-label="${esc(e.name)} load in kg"></label><label>Reps<input name="reps-${e.id}" type="number" min="1" max="1000" value="10" aria-label="${esc(e.name)} reps"></label><label class="done-check"><input type="checkbox" name="complete" value="${e.id}">Done</label></div>`) : prior ? `<span class="pill success">Done today</span>` : `<span class="mono">${esc(item.sets)}</span>`}</div>`;
       })
       .join("");
   }
@@ -109,7 +119,7 @@ export function startMemberApp(session) {
     const next = data.sessions
       .filter((s) => s.date >= TODAY && s.status !== "Completed")
       .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
-    return `${title("Good to see you, " + member().name.split(" ")[0] + ".", "A little consistency. A little support. Your next step is here.", btn("Check in with coach", "checkin", "message", "accent"))}<div class="metrics-grid section-gap">${metric("This week", count(), "sessions")}${metric("Training streak", member().streak, "weeks")}${metric("Club points", xpWeek(), "XP")}</div><div class="hero member-hero"><div><div class="eyebrow">${plan() ? "YOUR TRAINING PLAN" : "A PLACE TO START"}</div><h2>${esc(plan()?.name || "Welcome to your club.")}</h2><p>${esc(plan()?.description || "Your coach will assign your programme here. For now, make yourself at home.")}</p><div class="hero-actions">${plan() ? btn("Start your session", "start-workout", "arrow", "white") : btn("Send a check-in", "checkin", "arrow", "white")}</div></div><img src="assets/logo-mark-white.png" class="member-hero-mark" alt=""></div><div class="two-col section-gap" style="margin-top:22px"><section class="panel"><div class="panel-head"><h2>Your next session</h2>${icon("calendar")}</div>${next ? `<div class="session-row"><span class="session-time">${esc(next.time)}</span><i class="session-bar"></i><div class="session-info"><strong>${esc(next.name)}</strong><small>${dateLabel(next.date)} · ${next.duration} min · Coach ${esc(next.coach)}</small></div></div>` : '<div class="panel-pad muted">No sessions booked yet. Your coach will add them here.</div>'}<div class="panel-footer"><span>Keep a little space in your week for yourself.</span></div></section><section class="panel"><div class="panel-head"><h2>This week's tests</h2>${icon("target")}</div>${weeklyTests(TODAY)
+    return `${title("Good to see you, " + member().name.split(" ")[0] + ".", "A little consistency. A little support. Your next step is here.", btn("Check in with coach", "checkin", "message", "accent"))}<div class="metrics-grid section-gap">${metric("This week", count(), "sessions")}${metric("Training streak", member().streak, "weeks")}${metric("Club points", xpWeek(), "XP")}</div><div class="hero member-hero"><div><div class="eyebrow">${plan() ? "YOUR TRAINING PLAN" : "A PLACE TO START"}</div><h2>${esc(plan()?.name || "Welcome to your club.")}</h2><p>${esc(plan()?.description || "Your coach will assign your programme here. For now, make yourself at home.")}</p><div class="hero-actions">${plan() ? btn(startLabel(true), "start-workout", "arrow", "white") : btn("Send a check-in", "checkin", "arrow", "white")}</div></div><img src="assets/logo-mark-white.png" class="member-hero-mark" alt=""></div><div class="two-col section-gap" style="margin-top:22px"><section class="panel"><div class="panel-head"><h2>Your next session</h2>${icon("calendar")}</div>${next ? `<div class="session-row"><span class="session-time">${esc(next.time)}</span><i class="session-bar"></i><div class="session-info"><strong>${esc(next.name)}</strong><small>${dateLabel(next.date)} · ${next.duration} min · Coach ${esc(next.coach)}</small></div></div>` : '<div class="panel-pad muted">No sessions booked yet. Your coach will add them here.</div>'}<div class="panel-footer"><span>Keep a little space in your week for yourself.</span></div></section><section class="panel"><div class="panel-head"><h2>This week's tests</h2>${icon("target")}</div>${weeklyTests(TODAY)
       .map((t) => {
         const mine = data.measures
           .filter((m) => m.kind === t.kind && m.date >= mondayOf(TODAY) && m.date <= TODAY)
@@ -141,7 +151,7 @@ export function startMemberApp(session) {
           "Send your coach a check-in to talk about your goals.",
         )
       );
-    return `${title("A plan with purpose.", `${plan().weeks} weeks · ${plan().frequency} sessions per week`, btn("Start session", "start-workout", "play", "accent"))}<section class="panel"><div class="programme-cover"><span class="eyebrow">YOUR ASSIGNED PROGRAMME</span><img class="cover-mark" src="assets/logo-mark-white.png" alt=""><h3>${esc(plan().name)}</h3></div><div class="panel-pad"><p style="font-size:13px;line-height:1.8;margin-bottom:20px">${esc(plan().description)}</p>${programmeRows()}</div></section>`;
+    return `${title("A plan with purpose.", `${plan().weeks} weeks · ${plan().frequency} sessions per week`, btn(startLabel(false), "start-workout", "play", "accent"))}<section class="panel"><div class="programme-cover"><span class="eyebrow">YOUR ASSIGNED PROGRAMME</span><img class="cover-mark" src="assets/logo-mark-white.png" alt=""><h3>${esc(plan().name)}</h3></div><div class="panel-pad"><p style="font-size:13px;line-height:1.8;margin-bottom:20px">${esc(plan().description)}</p>${programmeRows()}</div></section>`;
   }
   function nutritionPage() {
     const meals = data.meals.filter((m) => m.date === TODAY);
@@ -401,11 +411,13 @@ export function startMemberApp(session) {
             })),
         });
         close();
-        const share = Math.round(50 * (completed.length / plan().exercises.length));
+        const merged = data.logs.find((l) => l.date === TODAY && l.programme === plan().id);
+        const doneCount = merged?.completedCount ?? completed.length;
+        const totalCount = merged?.exerciseCount ?? plan().exercises.length;
         toast(
-          completed.length === plan().exercises.length
+          doneCount >= totalCount
             ? "Full session logged. 50 club points earned."
-            : `Partial session logged — ${completed.length} of ${plan().exercises.length} exercises. ${share} club points earned.`,
+            : `Session saved — ${doneCount} of ${totalCount} exercises done today. ${Math.round(50 * (doneCount / totalCount))} club points so far; log the rest later to top it up.`,
         );
       }
       if (form.id === "member-checkin") {

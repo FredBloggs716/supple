@@ -56,6 +56,62 @@ describe("member actions — check-in, privacy, unknown", () => {
   });
 });
 
+describe("same-day session merging", () => {
+  it("logging exercises separately on one day stays ONE session and tops up", async () => {
+    const ws = fullWorkspace();
+    ws.exercises.push({ id: "e2", name: "Press", equipment: "Barbell", prescription: "3x5", cues: ["brace"] });
+    ws.programmes[0].exercises.push({ id: "e2", sets: "3x5" });
+    const coach = await setupCoach(ws);
+    const m = await memberLogin();
+
+    const first = await req(
+      "/api/member/actions",
+      "POST",
+      { key: "s1", action: "workout", completed: ["e1"], entries: [{ exercise: "e1", weight: 60, reps: 5 }] },
+      m,
+    );
+    expect(first.status).toBe(200);
+    expect(first.json.workspace.logs.length).toBe(1);
+
+    const second = await req(
+      "/api/member/actions",
+      "POST",
+      { key: "s2", action: "workout", completed: ["e2"], entries: [{ exercise: "e2", weight: 40, reps: 8 }] },
+      m,
+    );
+    expect(second.status).toBe(200);
+    const logs = second.json.workspace.logs;
+    expect(logs.length).toBe(1); // merged, not a second session
+    expect(logs[0].completedCount).toBe(2);
+    expect(logs[0].exerciseCount).toBe(2);
+    expect(logs[0].entries.length).toBe(2);
+
+    // leaderboard: one session, full 50 XP once both halves are done
+    const lb = await req("/api/leaderboard", "GET", undefined, { cookie: coach.cookie });
+    const row = lb.json.rows.find((r: any) => r.id === "c1");
+    expect(row.sessions).toBe(1);
+    expect(row.xp).toBe(50);
+  });
+
+  it("partial day earns proportional XP on the leaderboard", async () => {
+    const ws = fullWorkspace();
+    ws.exercises.push({ id: "e2", name: "Press", equipment: "Barbell", prescription: "3x5", cues: ["brace"] });
+    ws.programmes[0].exercises.push({ id: "e2", sets: "3x5" });
+    const coach = await setupCoach(ws);
+    const m = await memberLogin();
+    await req(
+      "/api/member/actions",
+      "POST",
+      { key: "p1", action: "workout", completed: ["e1"], entries: [{ exercise: "e1", weight: 60, reps: 5 }] },
+      m,
+    );
+    const lb = await req("/api/leaderboard", "GET", undefined, { cookie: coach.cookie });
+    const row = lb.json.rows.find((r: any) => r.id === "c1");
+    expect(row.sessions).toBe(1);
+    expect(row.xp).toBe(25); // 1 of 2 exercises = half of 50
+  });
+});
+
 describe("member actions — workout validation", () => {
   it("rejects entries for an exercise not marked complete and bad loads", async () => {
     const m = await member();
@@ -63,13 +119,14 @@ describe("member actions — workout validation", () => {
     expect((await req("/api/member/actions", "POST", { key: "bad2", action: "workout", completed: ["e1"], entries: [{ exercise: "e1", weight: 9999, reps: 5 }] }, m)).status).toBe(400);
     expect((await req("/api/member/actions", "POST", { key: "bad3", action: "workout", completed: ["e1"], entries: [{ exercise: "e1", weight: 50, reps: 0 }] }, m)).status).toBe(400);
   });
-  it("distinct keys both apply; a replayed key does not duplicate", async () => {
+  it("re-logging the same day merges (one session); a replayed key is a no-op", async () => {
     const m = await member();
-    const body = (key: string) => ({ key, action: "workout", completed: ["e1"], entries: [{ exercise: "e1", weight: 60, reps: 5 }] });
-    expect((await req("/api/member/actions", "POST", body("k1"), m)).status).toBe(200);
-    const second = await req("/api/member/actions", "POST", body("k2"), m);
-    expect(second.json.workspace.logs.length).toBe(2);
-    const replay = await req("/api/member/actions", "POST", body("k2"), m);
-    expect(replay.json.workspace.logs.length).toBe(2);
+    const body = (key: string, weight: number) => ({ key, action: "workout", completed: ["e1"], entries: [{ exercise: "e1", weight, reps: 5 }] });
+    expect((await req("/api/member/actions", "POST", body("k1", 60), m)).status).toBe(200);
+    const second = await req("/api/member/actions", "POST", body("k2", 70), m);
+    expect(second.json.workspace.logs.length).toBe(1); // merged into today's session
+    expect(second.json.workspace.logs[0].entries[0].weight).toBe(70); // latest result wins
+    const replay = await req("/api/member/actions", "POST", body("k2", 70), m);
+    expect(replay.json.workspace.logs.length).toBe(1);
   });
 });

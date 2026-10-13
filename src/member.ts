@@ -61,25 +61,44 @@ function applyMemberAction(w: any, user: UserRow, body: any): void {
       number(entry.weight, "working load", 0, 1000);
       number(entry.reps, "reps", 1, 1000);
     }
-    w.logs.push({
-      id: recordId,
-      client: cid,
-      date: today(),
-      type: "Programme session",
-      programme: p.id,
-      entries,
-      // Partial sessions earn proportional club points (legacy logs = full).
-      completedCount: completed.length,
-      exerciseCount: p.exercises.length,
-    });
-    w.activity.unshift({
-      id: randomHex(16),
-      title: firstName(c.name) + " completed a session",
-      text: p.name + " · Another step forward.",
-      date: today(),
-      icon: "checkCircle",
-      tone: "green",
-    });
+    // Same day + same programme = ONE session. Logging again later in the day
+    // tops up the existing log instead of counting a second session.
+    const existing = w.logs.find(
+      (l: any) => l.client === cid && l.date === today() && l.programme === p.id,
+    );
+    if (existing) {
+      const entryList: any[] = Array.isArray(existing.entries) ? existing.entries : [];
+      for (const entry of entries) {
+        const i = entryList.findIndex((e: any) => e.exercise === entry.exercise);
+        if (i >= 0) entryList[i] = entry; // repeat of an exercise: latest result wins
+        else entryList.push(entry);
+      }
+      existing.entries = entryList;
+      const done = new Set<string>(entryList.map((e: any) => e.exercise));
+      for (const id of completed) done.add(id);
+      existing.completedCount = done.size;
+      existing.exerciseCount = p.exercises.length;
+    } else {
+      w.logs.push({
+        id: recordId,
+        client: cid,
+        date: today(),
+        type: "Programme session",
+        programme: p.id,
+        entries,
+        // Partial sessions earn proportional club points (legacy logs = full).
+        completedCount: completed.length,
+        exerciseCount: p.exercises.length,
+      });
+      w.activity.unshift({
+        id: randomHex(16),
+        title: firstName(c.name) + " completed a session",
+        text: p.name + " · Another step forward.",
+        date: today(),
+        icon: "checkCircle",
+        tone: "green",
+      });
+    }
   } else if (action === "meal") {
     const meal: any = {
       id: recordId,
