@@ -10,6 +10,7 @@ export interface TestDef {
   unit: "reps" | "s" | "kg" | "cm";
   dir: "higher" | "lower";
   int: boolean; // whole numbers only
+  legacy?: boolean; // retired from rotation; stored results stay valid
 }
 
 const A: TestDef[] = [
@@ -27,14 +28,19 @@ const B: TestDef[] = [
   { kind: "Step-Ups in 3 Minutes", unit: "reps", dir: "higher", int: true },
 ];
 const C: TestDef[] = [
-  { kind: "Plank Hold", unit: "s", dir: "higher", int: true },
+  { kind: "Back Support Hold", unit: "s", dir: "higher", int: true },
   { kind: "Dead Hang", unit: "s", dir: "higher", int: true },
   { kind: "Hollow Hold", unit: "s", dir: "higher", int: true },
   { kind: "Wall Handstand Hold", unit: "s", dir: "higher", int: true },
   { kind: "Single-Leg Balance (Eyes Closed)", unit: "s", dir: "higher", int: true },
 ];
 
-export const TEST_POOL: TestDef[] = [...A, ...B, ...C];
+// Retired tests: no longer rotate, but stored results stay valid and chartable.
+const LEGACY: TestDef[] = [
+  { kind: "Plank Hold", unit: "s", dir: "higher", int: true, legacy: true },
+];
+
+export const TEST_POOL: TestDef[] = [...A, ...B, ...C, ...LEGACY];
 
 // "Body weight" is loggable but private — never part of the rotation/leaderboard.
 export const MEASURE_KINDS = new Set<string>([

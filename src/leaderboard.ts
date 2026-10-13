@@ -29,12 +29,22 @@ export async function leaderboard(req: Request, env: Env, user: UserRow): Promis
   for (const c of w.clients) {
     // Members see only opted-in peers (plus always themselves). Coaches see all.
     if (user.role !== "coach" && !c.leaderboardOptIn && c.id !== user.client) continue;
+    const weekLogs = w.logs.filter(
+      (l: any) => l.client === c.id && monday <= l.date && l.date <= now,
+    );
     const row: any = {
       id: c.id,
       name: displayName(c.name),
-      sessions: w.logs.filter(
-        (l: any) => l.client === c.id && monday <= l.date && l.date <= now,
-      ).length,
+      sessions: weekLogs.length,
+      // Proportional club points: partial sessions earn their completed share of 50.
+      xp: weekLogs.reduce(
+        (sum: number, l: any) =>
+          sum +
+          Math.round(
+            50 * (l.exerciseCount ? (l.completedCount ?? l.exerciseCount) / l.exerciseCount : 1),
+          ),
+        0,
+      ),
       streak: c.streak,
       adherence: c.adherence,
     };

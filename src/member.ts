@@ -68,6 +68,9 @@ function applyMemberAction(w: any, user: UserRow, body: any): void {
       type: "Programme session",
       programme: p.id,
       entries,
+      // Partial sessions earn proportional club points (legacy logs = full).
+      completedCount: completed.length,
+      exerciseCount: p.exercises.length,
     });
     w.activity.unshift({
       id: randomHex(16),

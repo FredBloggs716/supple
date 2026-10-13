@@ -17,14 +17,19 @@ const B = [
   { kind: "Step-Ups in 3 Minutes", unit: "reps", dir: "higher", int: true },
 ];
 const C = [
-  { kind: "Plank Hold", unit: "s", dir: "higher", int: true },
+  { kind: "Back Support Hold", unit: "s", dir: "higher", int: true },
   { kind: "Dead Hang", unit: "s", dir: "higher", int: true },
   { kind: "Hollow Hold", unit: "s", dir: "higher", int: true },
   { kind: "Wall Handstand Hold", unit: "s", dir: "higher", int: true },
   { kind: "Single-Leg Balance (Eyes Closed)", unit: "s", dir: "higher", int: true },
 ];
 
-export const TEST_POOL = [...A, ...B, ...C];
+// Retired tests: no longer rotate, but stored results stay valid and chartable.
+const LEGACY = [
+  { kind: "Plank Hold", unit: "s", dir: "higher", int: true, legacy: true },
+];
+
+export const TEST_POOL = [...A, ...B, ...C, ...LEGACY];
 
 export function testByKind(kind) {
   return TEST_POOL.find((t) => t.kind === kind);

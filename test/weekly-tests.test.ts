@@ -26,13 +26,23 @@ describe("weekly test rotation", () => {
     }
   });
 
-  it("covers the whole pool over a full cycle", () => {
+  it("covers every active test over a full cycle; legacy tests never rotate", () => {
     const seen = new Set<string>();
     for (let i = 0; i < 60; i++) {
       const d = new Date(Date.UTC(2026, 0, 5) + i * 7 * 86400000).toISOString().slice(0, 10);
       for (const t of weeklyTests(d)) seen.add(t.kind);
     }
-    expect(seen.size).toBe(TEST_POOL.length);
+    const active = TEST_POOL.filter((t) => !t.legacy);
+    expect(seen.size).toBe(active.length);
+    expect(seen.has("Plank Hold")).toBe(false); // retired — replaced by Back Support Hold
+    expect(seen.has("Back Support Hold")).toBe(true);
+  });
+
+  it("legacy kinds still validate so stored results stay safe", () => {
+    const w = baseWorkspace();
+    w.clients = [sampleClient("c1", "a@x.com")];
+    w.measures = [{ id: "m1", client: "c1", date: "2026-01-01", kind: "Plank Hold", value: 90 }];
+    expect(() => validateWorkspace(w)).not.toThrow();
   });
 });
 

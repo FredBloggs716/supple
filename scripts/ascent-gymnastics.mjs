@@ -54,45 +54,45 @@ export const programmes = [
   // HANDSTAND — Beginner / Intermediate / Advanced
   pg("hs1", "Handstand · Foundations (Beginner)", "Handstand", 8, 4, "slate",
     "~30 min, 4×/wk. WRIST PREP first, every session. Build a straight hollow line + chest-to-wall hold time. Hold the cleanest position you can, accumulate sets. Goal: 60s chest-to-wall. Little and often beats one long grind.", [
-    ex("wristprep", "warm-up · 5 min · all directions"), ex("hollow", "line · 4×20s"), ex("archhold", "line · 4×20s"),
-    ex("c2wall", "hold · 5× max clean (build to 60s total)"), ex("wallwalk", "strength · 3×3-5"), ex("kickup", "practice · 10 light reps + safe bail"),
-    ex("pikepush", "press builder · 3×6-10"), ex("hollowrock", "core · 3×10"),
+    ex("wristprep", "warm-up · 5 min · all directions"), ex("hollow", "line · 4×20s · rest 40s · ribs down"), ex("archhold", "line · 4×20s · rest 40s"),
+    ex("c2wall", "holds · 5×max CLEAN · rest 90s · goal 60s total"), ex("wallwalk", "strength · 3×3-5 slow · rest 60-90s"), ex("kickup", "skill · 10 light tries + safe bail · rest as needed"),
+    ex("pikepush", "press · 3×6-10 @ 2-0-1 · rest 60-90s"), ex("hollowrock", "core · 3×10 · steady rhythm"),
   ]),
   pg("hs2", "Handstand · Balance (Intermediate)", "Handstand", 8, 4, "slate",
     "~35 min, 4×/wk. Wrist prep first. Off the wall now — heel pulls, freestanding kick-up + safe bail, balance reps with fingertip corrections. Goal: 5-10s freestanding. Volume of attempts is the skill.", [
-    ex("wristprep", "warm-up · 5 min"), ex("b2wall", "balance · 5× heel-pull holds"), ex("kickup", "to freestanding · 15 attempts + bail"),
-    ex("freehs", "balance · many short attempts"), ex("wallhspu", "strength · 3×3-5 negatives"), ex("pikepress", "wall drills · 3×3-5"),
-    ex("hollow", "line · 3×30s"),
+    ex("wristprep", "warm-up · 5 min"), ex("b2wall", "balance · 5× heel-pull holds · rest 60-90s"), ex("kickup", "to freestanding · 15 tries · rest ~30s each"),
+    ex("freehs", "balance · many short tries, stop while fresh"), ex("wallhspu", "strength · 3×3-5 negatives @ 3-5s down · rest 2min"), ex("pikepress", "wall drills · 3×3-5 slow · rest 90s"),
+    ex("hollow", "line · 3×30s · rest 45s"),
   ]),
   pg("hs3", "Handstand · Mastery (Advanced)", "Handstand", 6, 4, "dark",
     "~40 min, 4×/wk. Wrist prep first. Freestanding time + press progressions + strict HSPU + one-arm prep (weight shifts to the fingertips). Goal: 30s freestanding, a press to handstand, strict HSPU.", [
-    ex("wristprep", "warm-up · 5 min"), ex("freehs", "hold · accumulate time + one-arm weight shifts"), ex("pikepress", "press · 4×3-5"),
-    ex("straddlepress", "press · 4×3-5 · negatives→full"), ex("wallhspu", "HSPU · 4×3-5"), ex("hollowrock", "core · 3×12"),
+    ex("wristprep", "warm-up · 5 min"), ex("freehs", "holds · accumulate time + weight shifts · rest fully"), ex("pikepress", "press · 4×3-5 slow · rest 2min"),
+    ex("straddlepress", "press · 4×3-5 negatives→full · rest 2min"), ex("wallhspu", "HSPU · 4×3-5 @ 3s down · rest 2min"), ex("hollowrock", "core · 3×12 rhythm"),
   ]),
   // GYMNASTIC STRENGTH — Levels 1-5
   pg("gym1", "Gymnastic Strength · L1 Foundations", "Gymnastic strength", 8, 3, "slate",
     "~45 min. WRIST PREP first. Build the straight-arm base + hollow/arch line + support. Static holds: hardest CLEAN variation ~10-15s, accumulate sets. Dynamic 2-3×3-5. Progress the leverage, not just the time.", [
-    ex("wristprep", "warm-up · 5 min"), ex("hollow", "line · 4×20-30s"), ex("archhold", "line · 4×20s"), ex("scappull", "scap · 3×8"),
-    ex("support", "hold · 4×20-30s"), ex("lsit", "hold · 5× max (tuck→one-leg)"), ex("invrow", "pull · 3×8-10"), ex("pushup", "push · 3×10-15"), ex("shoulderext", "shoulder prep · 3×20-30s"),
+    ex("wristprep", "warm-up · 5 min"), ex("hollow", "line · 4×20-30s · rest 45s"), ex("archhold", "line · 4×20s · rest 40s"), ex("scappull", "scap · 3×8 slow, full hang · rest 60s"),
+    ex("support", "hold · 4×20-30s · rest 60s · shoulders down"), ex("lsit", "holds · 5×max clean (tuck→one-leg) · rest 90s"), ex("invrow", "pull · 3×8-10 @ 2-0-1 · rest 60s"), ex("pushup", "push · 3×10-15 @ 2-0-1 · rest 60s"), ex("shoulderext", "shoulder prep · 3×20-30s easy, breathe"),
   ]),
   pg("gym2", "Gymnastic Strength · L2 Builder", "Gymnastic strength", 8, 3, "slate",
     "~50 min. Wrist prep first. Own full L-sit + tuck front lever + pseudo-planche. Antagonist balance: planche-line push vs front-lever-line pull. Steady-state — advance the variation when the sets feel strong.", [
-    ex("wristprep", "warm-up · 5 min"), ex("lsit", "hold · 5×15s (→full)"), ex("fl", "hold · 5×10s (tuck FL)"), ex("ppp", "push · 4×5-8"),
-    ex("pullup", "pull · 3×5"), ex("dip", "push · 3×6-8"), ex("skincat", "straight-arm · 3×3-5"), ex("tuckbl", "hold · 4×10s"),
+    ex("wristprep", "warm-up · 5 min"), ex("lsit", "holds · 5×15s (→full L) · rest 60-90s"), ex("fl", "tuck FL · 5×10s clean · rest 90s"), ex("ppp", "push · 4×5-8 · big lean · rest 90s"),
+    ex("pullup", "pull · 3×5 full ROM · rest 90s"), ex("dip", "push · 3×6-8 @ 2-0-1 · rest 90s"), ex("skincat", "straight-arm · 3×3-5 slow · ease in"), ex("tuckbl", "hold · 4×10s · rest 90s · ease shoulders in"),
   ]),
   pg("gym3", "Gymnastic Strength · L3 Developer", "Gymnastic strength", 8, 3, "dark",
     "~50 min. Wrist prep first. Advanced-tuck front lever, tuck planche, and the rings (support + dips). Short clean holds; progress the leverage. Rings add instability — earn them before loading.", [
-    ex("wristprep", "warm-up · 5 min"), ex("advtuckfl", "hold · 5×10s"), ex("tuckplanche", "hold · 5×10s"), ex("ringsupport", "hold · 4×20-30s"),
-    ex("ringdip", "push · 3×5-8"), ex("straddlebl", "hold · 4×10s"), ex("flrow", "pull · 3×5"),
+    ex("wristprep", "warm-up · 5 min"), ex("advtuckfl", "holds · 5×10s clean · rest 90s"), ex("tuckplanche", "holds · 5×10s · rest 90s-2min"), ex("ringsupport", "RTO hold · 4×20-30s · rest 90s"),
+    ex("ringdip", "push · 3×5-8 controlled · rest 90s"), ex("straddlebl", "hold · 4×10s · rest 90s"), ex("flrow", "pull · 3×5 crisp · rest 90s"),
   ]),
   pg("gym4", "Gymnastic Strength · L4 Strength", "Gymnastic strength", 6, 3, "dark",
     "~55 min. Wrist prep first. Straddle front lever + straddle planche + front-lever rows + HSPU + muscle-up. Elite straight-arm strength — pristine form or regress. Hold the cleanest few seconds you own.", [
-    ex("wristprep", "warm-up · 5 min"), ex("straddlefl", "hold · 5×8-10s"), ex("straddleplanche", "hold · 5×8-10s"), ex("flrow", "pull · 4×5"),
-    ex("wallhspu", "push · 4×5"), ex("muscleup", "dynamic · 4×2-3"), ex("germanhang", "shoulder · 3×30s"),
+    ex("wristprep", "warm-up · 5 min"), ex("straddlefl", "holds · 5×8-10s · rest 2min"), ex("straddleplanche", "holds · 5×8-10s · rest 2min"), ex("flrow", "pull · 4×5 · body flat · rest 2min"),
+    ex("wallhspu", "push · 4×5 @ 3s down · rest 2min"), ex("muscleup", "dynamic · 4×2-3 fresh + explosive · rest 2min"), ex("germanhang", "shoulder · 3×30s easy"),
   ]),
   pg("gym5", "Gymnastic Strength · L5 Elite", "Gymnastic strength", 6, 3, "dark",
     "~55 min. Wrist prep first. Full front lever + planche work + lever/planche pulls + one-arm prep. The top of the ladder — built over months of consistent, clean holds. Quality is everything.", [
-    ex("wristprep", "warm-up · 5 min"), ex("fullfl", "hold · 5× max clean"), ex("straddleplanche", "hold · 5× max (→full)"), ex("flrow", "pull · 5×3-5"),
-    ex("muscleup", "dynamic · 5×2-3"), ex("ringsupport", "hold · 4×30s"), ex("pullup", "weighted · 4×5"),
+    ex("wristprep", "warm-up · 5 min"), ex("fullfl", "holds · 5×max clean line · rest 2-3min"), ex("straddleplanche", "holds · 5×max (→full) · rest 2-3min"), ex("flrow", "pull · 5×3-5 · rest 2min"),
+    ex("muscleup", "dynamic · 5×2-3 strict-ish · rest 2min"), ex("ringsupport", "RTO hold · 4×30s · rest 90s"), ex("pullup", "weighted · 4×5 · rest 2min"),
   ]),
 ];

@@ -56,6 +56,13 @@ export function startMemberApp(session) {
       month: "short",
       timeZone: "Europe/London",
     }).format(new Date(d + "T12:00:00"));
+  // Proportional club points: a partial session earns its completed share of 50.
+  const xpFor = (l) =>
+    Math.round(50 * (l.exerciseCount ? (l.completedCount ?? l.exerciseCount) / l.exerciseCount : 1));
+  const xpWeek = () =>
+    data.logs
+      .filter((l) => l.date >= mondayOf(TODAY) && l.date <= TODAY)
+      .reduce((s, l) => s + xpFor(l), 0);
   const results = () =>
     data.measures
       .filter((m) => m.kind === resultKind)
@@ -102,13 +109,21 @@ export function startMemberApp(session) {
     const next = data.sessions
       .filter((s) => s.date >= TODAY && s.status !== "Completed")
       .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
-    return `${title("Good to see you, " + member().name.split(" ")[0] + ".", "A little consistency. A little support. Your next step is here.", btn("Check in with coach", "checkin", "message", "accent"))}<div class="metrics-grid section-gap">${metric("This week", count(), "sessions")}${metric("Training streak", member().streak, "weeks")}${metric("Club points", count() * 50, "XP")}</div><div class="hero member-hero"><div><div class="eyebrow">${plan() ? "YOUR TRAINING PLAN" : "A PLACE TO START"}</div><h2>${esc(plan()?.name || "Welcome to your club.")}</h2><p>${esc(plan()?.description || "Your coach will assign your programme here. For now, make yourself at home.")}</p><div class="hero-actions">${plan() ? btn("Start your session", "start-workout", "arrow", "white") : btn("Send a check-in", "checkin", "arrow", "white")}</div></div><img src="assets/logo-mark-white.png" class="member-hero-mark" alt=""></div><div class="two-col section-gap" style="margin-top:22px"><section class="panel"><div class="panel-head"><h2>Your next session</h2>${icon("calendar")}</div>${next ? `<div class="session-row"><span class="session-time">${esc(next.time)}</span><i class="session-bar"></i><div class="session-info"><strong>${esc(next.name)}</strong><small>${dateLabel(next.date)} · ${next.duration} min · Coach ${esc(next.coach)}</small></div></div>` : '<div class="panel-pad muted">No sessions booked yet. Your coach will add them here.</div>'}<div class="panel-footer"><span>Keep a little space in your week for yourself.</span></div></section><section class="panel panel-pad"><h2>A few words for your coach.</h2><p class="muted" style="font-size:12px;line-height:1.8;margin:13px 0 18px">How’s training feeling? Share what’s going well, and where a little help would go a long way.</p>${btn("Send a check-in", "checkin", "message", "small")}</section></div><section class="panel"><div class="panel-head"><h2>Recent training</h2>${icon("dumbbell")}</div>${
+    return `${title("Good to see you, " + member().name.split(" ")[0] + ".", "A little consistency. A little support. Your next step is here.", btn("Check in with coach", "checkin", "message", "accent"))}<div class="metrics-grid section-gap">${metric("This week", count(), "sessions")}${metric("Training streak", member().streak, "weeks")}${metric("Club points", xpWeek(), "XP")}</div><div class="hero member-hero"><div><div class="eyebrow">${plan() ? "YOUR TRAINING PLAN" : "A PLACE TO START"}</div><h2>${esc(plan()?.name || "Welcome to your club.")}</h2><p>${esc(plan()?.description || "Your coach will assign your programme here. For now, make yourself at home.")}</p><div class="hero-actions">${plan() ? btn("Start your session", "start-workout", "arrow", "white") : btn("Send a check-in", "checkin", "arrow", "white")}</div></div><img src="assets/logo-mark-white.png" class="member-hero-mark" alt=""></div><div class="two-col section-gap" style="margin-top:22px"><section class="panel"><div class="panel-head"><h2>Your next session</h2>${icon("calendar")}</div>${next ? `<div class="session-row"><span class="session-time">${esc(next.time)}</span><i class="session-bar"></i><div class="session-info"><strong>${esc(next.name)}</strong><small>${dateLabel(next.date)} · ${next.duration} min · Coach ${esc(next.coach)}</small></div></div>` : '<div class="panel-pad muted">No sessions booked yet. Your coach will add them here.</div>'}<div class="panel-footer"><span>Keep a little space in your week for yourself.</span></div></section><section class="panel"><div class="panel-head"><h2>This week's tests</h2>${icon("target")}</div>${weeklyTests(TODAY)
+      .map((t) => {
+        const mine = data.measures
+          .filter((m) => m.kind === t.kind && m.date >= mondayOf(TODAY) && m.date <= TODAY)
+          .sort((a, b) => (a.date < b.date ? -1 : 1));
+        const done = mine.length > 0;
+        return `<div class="meal-row"><span class="meal-icon">${icon(done ? "checkCircle" : "target")}</span><div><strong>${esc(t.kind)}</strong><small>${done ? "Logged · " + formatResult(t.kind, mine[mine.length - 1].value) : "Not logged yet this week"}</small></div>${done ? '<span class="pill success">Done</span>' : btn("Log", "result", "plus", "small", `data-kind="${esc(t.kind)}"`)}</div>`;
+      })
+      .join("")}<div class="panel-footer"><span>Three club tests rotate every Monday. Log them to take your place on the board.</span></div></section></div><div class="two-col section-gap" style="margin-top:22px"><section class="panel panel-pad"><h2>A few words for your coach.</h2><p class="muted" style="font-size:12px;line-height:1.8;margin:13px 0 18px">How’s training feeling? Share what’s going well, and where a little help would go a long way.</p>${btn("Send a check-in", "checkin", "message", "small")}</section><section class="panel"><div class="panel-head"><h2>Recent training</h2>${icon("dumbbell")}</div>${
       data.logs
         .slice(-4)
         .reverse()
         .map(
           (l) =>
-            `<div class="meal-row"><span class="meal-icon">${icon("checkCircle")}</span><div><strong>${esc(l.type)}</strong><small>${dateLabel(l.date)} · Session complete</small></div><span class="pill success">+50 XP</span></div>`,
+            `<div class="meal-row"><span class="meal-icon">${icon("checkCircle")}</span><div><strong>${esc(l.type)}</strong><small>${dateLabel(l.date)} · Session complete</small></div><span class="pill success">+${xpFor(l)} XP</span></div>`,
         )
         .join("") ||
       '<div class="panel-pad muted">Your first session will appear here.</div>'
@@ -202,7 +217,7 @@ export function startMemberApp(session) {
             ? a.tests[board] - b.tests[board]
             : b.tests[board] - a.tests[board],
       );
-    return `${title("A little friendly competition.", "Your club. Your people. Celebrate showing up.")}<div class="leader-hero"><div><div class="eyebrow">STRONGER TOGETHER</div><h2>Different starting points.<br>One team.</h2><p>Every session counts. Earn 50 XP each time you train.</p></div>${icon("trophy")}</div>${!member().leaderboardOptIn ? '<div class="tip section-gap">' + icon("shield") + "<div><strong>You control what you share.</strong>Turn on club participation in My account to share your attendance and benchmarks. Body weight and coach notes always stay private.</div></div>" : ""}<section class="panel"><div class="panel-head"><h2>The club leaderboard</h2><span class="pill neutral">${board === "Attendance" ? "This week" : "This week's test"}</span></div><div class="chart-options" style="padding-bottom:17px"><div class="tabs">${["Attendance", ...weekly.map((t) => t.kind)].map((k) => `<button class="tab ${board === k ? "active" : ""}" data-member-action="board" data-value="${esc(k)}">${esc(k)}</button>`).join("")}</div></div><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Club member</th><th>${board === "Attendance" ? "Sessions" : "Result"}</th><th>${board === "Attendance" ? "Tests + points" : "Club points"}</th></tr></thead><tbody>${list.map((r, i) => `<tr><td><span class="rank ${i === 0 ? "top" : ""}">${String(i + 1).padStart(2, "0")}</span></td><td><strong>${esc(r.name)}</strong>${r.id === member().id ? '<span class="pill neutral" style="margin-left:8px">You</span>' : ""}</td><td class="mono">${board === "Attendance" ? r.sessions : formatResult(board, r.tests[board])}</td><td>${board === "Attendance" ? `<span class="pill ${r.testsThisWeek ? "success" : "neutral"}">${r.testsThisWeek ?? 0}/3 tests</span> <span class="pill success">${r.sessions * 50} XP</span>` : `<span class="pill success">${r.sessions * 50} XP</span>`}</td></tr>`).join("") || '<tr><td colspan="4">No results logged this week yet. Your next result can start the board.</td></tr>'}</tbody></table></div></section>`;
+    return `${title("A little friendly competition.", "Your club. Your people. Celebrate showing up.", btn("Log a test result", "result", "plus", "accent"))}<div class="leader-hero"><div><div class="eyebrow">STRONGER TOGETHER</div><h2>Different starting points.<br>One team.</h2><p>Every session counts. Earn 50 XP each time you train.</p></div>${icon("trophy")}</div>${!member().leaderboardOptIn ? '<div class="tip section-gap">' + icon("shield") + "<div><strong>You control what you share.</strong>Turn on club participation in My account to share your attendance and benchmarks. Body weight and coach notes always stay private.</div></div>" : ""}<section class="panel"><div class="panel-head"><h2>The club leaderboard</h2><span class="pill neutral">${board === "Attendance" ? "This week" : "This week's test"}</span></div><div class="chart-options" style="padding-bottom:17px"><div class="tabs">${["Attendance", ...weekly.map((t) => t.kind)].map((k) => `<button class="tab ${board === k ? "active" : ""}" data-member-action="board" data-value="${esc(k)}">${esc(k)}</button>`).join("")}</div></div><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Club member</th><th>${board === "Attendance" ? "Sessions" : "Result"}</th><th>${board === "Attendance" ? "Tests + points" : "Club points"}</th></tr></thead><tbody>${list.map((r, i) => `<tr><td><span class="rank ${i === 0 ? "top" : ""}">${String(i + 1).padStart(2, "0")}</span></td><td><strong>${esc(r.name)}</strong>${r.id === member().id ? '<span class="pill neutral" style="margin-left:8px">You</span>' : ""}</td><td class="mono">${board === "Attendance" ? r.sessions : formatResult(board, r.tests[board])}</td><td>${board === "Attendance" ? `<span class="pill ${r.testsThisWeek ? "success" : "neutral"}">${r.testsThisWeek ?? 0}/3 tests</span> <span class="pill success">${r.xp ?? r.sessions * 50} XP</span>` : `<span class="pill success">${r.xp ?? r.sessions * 50} XP</span>`}</td></tr>`).join("") || '<tr><td colspan="4">No results logged this week yet. Your next result can start the board.</td></tr>'}</tbody></table></div></section>`;
   }
   function accountPage() {
     return `${title("Your corner of the club.", "A few details, just for you.")}<div class="two-col"><section class="panel panel-pad"><div class="profile-head">${avatar()}<div><h3>${esc(member().name)}</h3><p>${esc(member().email)}</p></div></div><div class="info-row"><span>Your coach</span><strong>${esc(data.settings.coach)}</strong></div><div class="info-row"><span>Your goal</span><strong>${esc(member().goal)}</strong></div><form id="member-privacy"><div class="settings-row"><div><strong>Join the club leaderboard</strong><p>Share your first name, last initial, attendance and training benchmarks with signed-in club members. Your body weight stays private.</p></div><label class="switch"><input name="optIn" type="checkbox" ${member().leaderboardOptIn ? "checked" : ""} aria-label="Join the club leaderboard"><span></span></label></div><button class="btn primary" type="submit">Save preference${icon("check")}</button></form></section><section class="panel panel-pad"><h2>Your sign-in details</h2><p class="muted" style="font-size:12px;line-height:1.8;margin:13px 0 22px">Your records are shared only with your coach. Sign out when you finish on a shared device.</p><div class="account-actions">${btn("Change password", "password", "shield", "full")}${btn("Sign out", "logout", "arrow", "full")}</div></section></div>`;
@@ -320,12 +335,14 @@ export function startMemberApp(session) {
           )
           .join("")}</div>${footer("Log food")}</form>`,
       ),
-    result: () =>
-      modal(
+    result: (el) => {
+      if (el?.dataset.kind) resultKind = el.dataset.kind;
+      return modal(
         "Make progress visible.",
         "A benchmark is a starting point, not a judgement.",
         `<form id="member-result"><label class="field"><span>Measurement</span><select name="kind" id="member-kind">${[...weeklyTests(TODAY).map((t) => t.kind), "Body weight"].map((k) => { const t = testByKind(k); const unit = !t ? "kg" : t.unit === "s" ? "seconds" : t.unit; return `<option value="${esc(k)}" ${k === resultKind ? "selected" : ""}>${esc(k)} · ${unit}</option>`; }).join("")}</select></label><p class="field-help" style="margin:-6px 0 12px">This week's three club tests rotate every Monday — log them to join the board. Whole numbers for reps and seconds. Body weight stays private.</p><div class="form-grid"><label class="field"><span>Result</span><input name="value" type="number" min="0.1" max="10000" step="0.1" required></label><label class="field"><span>Date</span><input name="date" type="date" max="${TODAY}" value="${TODAY}" required></label></div>${footer("Save result")}</form>`,
-      ),
+      );
+    },
     password: () =>
       modal(
         "A fresh password.",
@@ -384,7 +401,12 @@ export function startMemberApp(session) {
             })),
         });
         close();
-        toast("Session logged. 50 club points earned.");
+        const share = Math.round(50 * (completed.length / plan().exercises.length));
+        toast(
+          completed.length === plan().exercises.length
+            ? "Full session logged. 50 club points earned."
+            : `Partial session logged — ${completed.length} of ${plan().exercises.length} exercises. ${share} club points earned.`,
+        );
       }
       if (form.id === "member-checkin") {
         await update("checkin", { text: value("text") });

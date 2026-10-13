@@ -93,69 +93,69 @@ function pg(id, name, goal, weeks, frequency, colour, description, exercises) {
 export const programmes = [
   // 1. FOUNDATIONS & CONTROL — lots of control/mobility/holds, low fatigue
   pg("found", "Foundations & Control", "Movement", 8, 3, "light",
-    "~45 min. Own the basics — brace & breathe, control through range, tissue prep. Low fatigue. Wk1-3 groove patterns, wk4-6 add control/ROM, wk7 load a touch, wk8 easy. Quality over sweat.", [
-    ex("gsq", "G1 main · 8 · tempo 3s down ·×2"), ex("deadbug", "G1 core · 8/side ·×2"), ex("splitsquat", "G1 single-leg · 20s/side hold ·×2"), ex("anklerock", "G1 mobility · 10/side ·×2"),
-    ex("rdl", "G2 hinge · 8 (light) ·×2"), ex("scappush", "G2 shoulder · 10 ·×2"), ex("hambridge", "G2 tissue · 10 ·×2"), ex("hipcars", "G2 mobility · 3/dir ·×2"),
-    ex("pushup", "G3 push · 8-12 ·×2"), ex("invrow", "G3 pull · 8-12 ·×2"), ex("suitcase", "G3 carry · 25m/side ·×2"), ex("deepsquat", "G3 hold · 30s ·×2"),
-    ex("stepdown", "G4 knee · 6/side ·×2"), ex("tibraise", "G4 ankle · 15 ·×2"), ex("calfraise", "G4 calf · 12 ·×2"), ex("hollow", "G4 core · 20s ·×2"),
+    "~45 min · Own the basics. Run each group as a circuit ×2 rounds, rest 60s between rounds. Tempo a-b-c = secs down-pause-up (TUT). Wk1-3 groove patterns, wk4-6 add range, wk7 light load, wk8 easy. Quality over sweat.", [
+    ex("gsq", "G1 main · 2×8 @ 3-0-1 · brace first"), ex("deadbug", "G1 active rest · 2×8/side · slow exhale"), ex("splitsquat", "G1 hold · 2×20s/side · own the position"), ex("anklerock", "G1 mobility · 2×10/side · easy"),
+    ex("rdl", "G2 hinge · 2×8 light @ 3-0-1"), ex("scappush", "G2 shoulder · 2×10 · slow + full"), ex("hambridge", "G2 tissue · 2×10 @ 2-1-1"), ex("hipcars", "G2 mobility · 2×3/dir · slow circles"),
+    ex("pushup", "G3 push · 2×8-12 @ 2-0-1"), ex("invrow", "G3 pull · 2×8-12 @ 2-0-1"), ex("suitcase", "G3 carry · 2×25m/side · tall, no lean"), ex("deepsquat", "G3 hold · 2×30s · breathe + pry"),
+    ex("stepdown", "G4 knee · 2×6/side · 3s down"), ex("tibraise", "G4 ankle · 2×15 · full range"), ex("calfraise", "G4 calf · 2×12 @ 2-1-2"), ex("hollow", "G4 core · 2×20s · ribs down"),
   ]),
   // 2. TENDON REBUILD — isometric → slow → eccentric, minimal ballistic
   pg("tendon", "Tendon Rebuild", "Tissue capacity", 4, 3, "sage",
-    "~45 min. Tissue-first for knees/Achilles/hamstrings/groin. Iso → slow strength → eccentric. Wk1 holds, wk2-3 add slow load + ROM, wk4 low pogo if pain-free. Tendons get a daily vote — load off the next-morning response.", [
-    ex("span", "G1 knee iso · 30-45s ·×2"), ex("calfraise", "G1 calf · 3s down ·12 ·×2"), ex("stepdown", "G1 patellar · 6-8/side ·×2"), ex("tibraise", "G1 ankle · 15-20 ·×2"),
-    ex("rdl", "G2 hinge · 6-8 slow ·×2"), ex("hambridge", "G2 ham · 20-30s hold ·×2"), ex("slidercurl", "G2 eccentric · 6-10 ·×2"), ex("ninety", "G2 mobility · 8/side ·×2"),
-    ex("copenhagen", "G3 adductor · 15-25s/side ·×2"), ex("revlunge", "G3 single-leg · 6-8/side ·×2"), ex("latlunge", "G3 frontal · 6/side ·×2"), ex("bss", "G3 knee · 6/side ·×2"),
-    ex("farmer", "G4 carry · 30-40m ·×2"), ex("pallof", "G4 anti-rot · 8-10/side ·×2"), ex("bearcrawl", "G4 whole-body · 10-20m ·×2"), ex("deadbug", "G4 core · 8/side ·×2"),
+    "~45 min · Tissue-first: iso → slow strength → eccentric. Circuits ×2 per group, rest 60-90s between rounds. Tempo 3-1-1 ≈ 5s TUT per rep. Wk1 holds, wk2-3 add load + ROM, wk4 low pogo if pain-free. Load off the next-morning tendon response.", [
+    ex("span", "G1 knee iso · 2×30-45s · firm, breathe"), ex("calfraise", "G1 calf · 2×12 @ 3-1-1 slow"), ex("stepdown", "G1 patellar · 2×6-8/side · 3s down"), ex("tibraise", "G1 ankle · 2×15-20 · pump"),
+    ex("rdl", "G2 hinge · 2×6-8 @ 3-1-1 · hams loaded"), ex("hambridge", "G2 ham iso · 2×20-30s long-lever"), ex("slidercurl", "G2 eccentric · 2×6-10 · 5s slide out"), ex("ninety", "G2 mobility · 2×8/side · slow"),
+    ex("copenhagen", "G3 adductor · 2×15-25s/side"), ex("revlunge", "G3 single-leg · 2×6-8/side @ 2-0-1"), ex("latlunge", "G3 frontal · 2×6/side · sit in"), ex("bss", "G3 knee · 2×6/side @ 3-0-1"),
+    ex("farmer", "G4 carry · 2×30-40m · heavy, tall"), ex("pallof", "G4 anti-rot · 2×8-10/side · 2s hold"), ex("bearcrawl", "G4 crawl · 2×10-20m · slow, flat back"), ex("deadbug", "G4 core · 2×8/side · exhale"),
   ]),
   // 3. PLATFORM — GPP/strength-endurance: dense, concurrent, active-rest heavy
   pg("platform", "Platform · Strength-Endurance", "GPP", 6, 3, "slate",
-    "~50 min. Build the engine — high-quality reps, density, active rest. Wk1-2 build density (short rest), wk3-4 add load + own full ROM, wk5 push rounds, wk6 deload −40%. RPE 6-8, hold shape. Finish: 8-12 min steady circuit (swings/goblet/carry/crawl).", [
-    ex("swing", "G1 main · 15 ·×2"), ex("deadbug", "G1 active rest · 8/side ·×2"), ex("gsq", "G1 lower · full ROM 12 ·×2"), ex("shouldercars", "G1 mobility · 3/dir ·×2"),
-    ex("pushup", "G2 main · 10-15 ·×2"), ex("splitsquat", "G2 single-leg · 20s/side hold ·×2"), ex("rdl", "G2 hinge · KB 12 ·×2"), ex("hipcars", "G2 mobility · 3/dir ·×2"),
-    ex("invrow", "G3 main · 10-12 ·×2"), ex("suitcase", "G3 carry · 25m/side ·×2"), ex("stepup", "G3 lower · 10/side ·×2"), ex("tibraise", "G3 ankle · 20 ·×2"),
+    "~50 min · Engine + full-ROM strength. Groups = circuits ×2, short rest 30-60s — the varied moves ARE the rest. RPE 6-8, shape holds. Wk1-2 density, wk3-4 add load, wk5 push rounds, wk6 deload −40%. Finish: 8-12 min steady swings/squat/carry/crawl.", [
+    ex("swing", "G1 main · 2×15 · crisp hip snap"), ex("deadbug", "G1 active rest · 2×8/side"), ex("gsq", "G1 lower · 2×12 full ROM @ 2-0-1"), ex("shouldercars", "G1 mobility · 2×3/dir"),
+    ex("pushup", "G2 main · 2×10-15 @ 2-0-1"), ex("splitsquat", "G2 hold · 2×20s/side"), ex("rdl", "G2 hinge · KB 2×12 @ 2-0-1"), ex("hipcars", "G2 mobility · 2×3/dir"),
+    ex("invrow", "G3 main · 2×10-12 · full reach"), ex("suitcase", "G3 carry · 2×25m/side · tall"), ex("stepup", "G3 lower · 2×10/side · drive the heel"), ex("tibraise", "G3 ankle · 2×20"),
   ]),
   // 4. TRIPHASIC STRENGTH — heavy mains, full recovery, active rest = CARs
   pg("triphasic", "Triphasic Strength", "Max strength", 3, 3, "dark",
-    "~60 min. Heavy, clean, full recovery. Weekly wave: Wk1 eccentric (5s lower), Wk2 isometric (pause in the hole), Wk3 concentric/explosive intent. Active rest stays LIGHT — CARs, not fatigue. Train fresh; tendons get a vote.", [
-    ex("frontsquat", "G1 main · 4×5 · ecc→iso→fast"), ex("shouldercars", "G1 active rest · 3/dir"),
-    ex("tbdl", "G2 hinge · 4×4-6 · ecc→iso→fast"), ex("calfraise", "G2 active rest · 12"),
-    ex("swing", "G3 power · 8×10 crisp"), ex("deadbug", "G3 active rest · 6/side"),
-    ex("floorpress", "G4 press · 4×6"), ex("pullup", "G4 pull · 4×5"), ex("hipcars", "G4 active rest · 3/dir"),
-    ex("splitsquat", "G5 circuit · 20s/side ·×2-3"), ex("copenhagen", "G5 circuit · 20s/side ·×2-3"), ex("tibraise", "G5 circuit · 15-20 ·×2-3"), ex("suitcase", "G5 circuit · 25m/side ·×2-3"),
+    "~60 min · Heavy and clean, FULL recovery between main sets (2-3 min — do the CARs while you rest). Weekly tempo wave: Wk1 eccentric 5s down · Wk2 isometric 3s pause in the hole · Wk3 explosive up. Stop a rep shy of grinding; tendons get a vote.", [
+    ex("frontsquat", "G1 main · 4×5 · wk1 5s ecc / wk2 3s pause / wk3 fast · rest 2-3min"), ex("shouldercars", "G1 active rest · 3/dir between sets"),
+    ex("tbdl", "G2 hinge · 4×4-6 · same weekly tempo · rest 2-3min"), ex("calfraise", "G2 active rest · 12 slow"),
+    ex("swing", "G3 power · 8×10 crisp · rest 60s"), ex("deadbug", "G3 active rest · 6/side"),
+    ex("floorpress", "G4 press · 4×6 @ 3-1-1 · rest 90s"), ex("pullup", "G4 pull · 4×5 full hang · rest 90s"), ex("hipcars", "G4 active rest · 3/dir"),
+    ex("splitsquat", "G5 circuit ×2-3 · 20s/side hold"), ex("copenhagen", "G5 circuit ×2-3 · 20s/side"), ex("tibraise", "G5 circuit ×2-3 · 15-20"), ex("suitcase", "G5 circuit ×2-3 · 25m/side"),
   ]),
   // 5. POWER & SPEED — fresh CNS, primer + contrast, quality not density
   pg("power", "Power & Speed", "Power/speed", 3, 3, "stone",
-    "~55 min. On a FRESH CNS — this is skill work, not cardio. Contrast pairs (heavy → explosive), full recovery (95%+). Wk1 short accel (10-20m), wk2 add contrast load, wk3 longer accel + flys. Never under fatigue.", [
-    ex("askip", "P1 primer · 4×20m"), ex("accel", "P1 primer · 6×10-20m · full rest"), ex("pogo", "P1 elastic · 4×10"),
-    ex("sq", "G2 heavy · 4×3 → pair broad jump"), ex("broad", "G2 explosive · 4×3"), ex("hipcars", "G2 active rest · 3/dir"),
-    ex("swing", "G3 power · 5×10"), ex("box", "G3 plyo · 4×3"), ex("mbslam", "G3 throw · 4×5"),
-    ex("latbound", "G4 reactive · 4×4/side"), ex("nordic", "G4 robustness · 3×5"), ex("pallof", "G4 anti-rot · 8/side"),
+    "~55 min · Speed is skill: train FRESH, quality over density, 95%+ recovery on fast work (2-3 min between efforts). Contrast = heavy set, then the explosive pair straight after. Wk1 10-20m accels, wk2 add contrast load, wk3 30m + flying starts. Stop when speed drops.", [
+    ex("askip", "P1 primer · 4×20m · tall + springy"), ex("accel", "P1 speed · 6×10-20m · FULL rest 2-3min"), ex("pogo", "P1 elastic · 4×10 · min ground time"),
+    ex("sq", "G2 contrast A · 4×3 heavy, fast intent · rest 2min"), ex("broad", "G2 contrast B · 4×3 max · straight after squat"), ex("hipcars", "G2 active rest · 3/dir"),
+    ex("swing", "G3 power · 5×10 crisp · rest 60-90s"), ex("box", "G3 plyo · 4×3 · step down + reset"), ex("mbslam", "G3 throw · 4×5 max intent"),
+    ex("latbound", "G4 reactive · 4×4/side · stick 1s"), ex("nordic", "G4 hams · 3×5 · slow as possible"), ex("pallof", "G4 anti-rot · 8/side @ 2s hold"),
   ]),
   // 6. KETTLEBELL STRONG (Pavel) — strength as skill, submaximal, tension
   pg("kb", "Kettlebell Strong", "Strength skill", 6, 3, "",
-    "~45 min. Strength is a skill — crisp reps, high tension, leave reps in reserve, never to failure. Grease the groove. Wk1-2 own technique, wk3-4 nudge the bell up, wk5 density, wk6 easy. Power breathing + brace.", [
-    ex("swing", "G1 main · 10×10 · rest 30-60s"), ex("deadbug", "G1 active rest · 8/side"),
-    ex("gsq", "G2 main · 5×5 · full ROM"), ex("hipcars", "G2 active rest · 3/dir"),
-    ex("kbpress", "G3 main · 5×3/side · no grind"), ex("shouldercars", "G3 active rest · 3/dir"),
-    ex("tgu", "G4 practice · 3/side slow"), ex("suitcase", "G4 carry · 25m/side"), ex("kbcp", "G4 complex · 5/side"),
+    "~45 min · Strength is a skill: crisp tension, power breathing, always 2+ reps in reserve — never to failure. Rest 30-90s between sets; do the CARs while you rest. Wk1-2 own technique, wk3-4 heavier bell, wk5 density, wk6 easy.", [
+    ex("swing", "G1 main · 10×10 hardstyle snap · rest 30-60s"), ex("deadbug", "G1 active rest · 8/side"),
+    ex("gsq", "G2 main · 5×5 full ROM @ 2-1-1 · rest 60s"), ex("hipcars", "G2 active rest · 3/dir"),
+    ex("kbpress", "G3 main · 5×3/side strict · no grind · rest 60-90s"), ex("shouldercars", "G3 active rest · 3/dir"),
+    ex("tgu", "G4 skill · 3×1/side · slow + perfect"), ex("suitcase", "G4 carry · 25m/side · tall"), ex("kbcp", "G4 complex · 5/side smooth"),
   ]),
   // (Gymnastic Strength is now the dedicated 5-level suite in ascent-gymnastics.mjs)
   // 8. EXPRESS STRENGTH — 2 groups, big movements, ~25 min
   pg("exstr", "Express Strength", "Strength", 4, 4, "dark",
-    "~25 min. Short on time — two groups, big movements, done. Full-body stimulus. Wk1-2 groove, wk3 add load, wk4 easy. Brace, full ROM, no junk reps.", [
-    ex("gsq", "G1 main · 4×6 · full ROM"), ex("deadbug", "G1 active rest · 8/side"),
-    ex("rdl", "G2 hinge · 3×8"), ex("pushup", "G2 push · 3×12"), ex("invrow", "G2 pull · 3×10"),
+    "~25 min · Two groups, big moves, done. G1 = straight sets, rest 60s (dead bugs while you rest). G2 = circuit ×3, rest 30-45s between rounds. Tempo ~2-0-1, keep 2 reps in reserve. Wk1-2 groove, wk3 add load, wk4 easy.", [
+    ex("gsq", "G1 main · 4×6 full ROM @ 2-0-1 · rest 60s"), ex("deadbug", "G1 active rest · 8/side"),
+    ex("rdl", "G2 circuit · 3×8 @ 2-1-1"), ex("pushup", "G2 circuit · 3×12 @ 2-0-1"), ex("invrow", "G2 circuit · 3×10 · full reach"),
   ]),
   // 9. EXPRESS CONDITIONING — 15-min AMRAP for quality, ~25 min
   pg("excon", "Express Conditioning", "Conditioning", 4, 3, "stone",
-    "~25 min. A quick engine hit — 15-min AMRAP for QUALITY, not a smash-fest. Break sets before shape fails. RPE 6-8. Wk1-2 steady rounds, wk3 push, wk4 easy. Not before a key rugby day.", [
-    ex("swing", "AMRAP · 12"), ex("gsq", "AMRAP · 10"), ex("pushup", "AMRAP · 10"), ex("suitcase", "AMRAP · 20m/side"), ex("deadbug", "AMRAP · 8/side"), ex("bearcrawl", "finisher · 2×15m"),
+    "~25 min · 15-min AMRAP for QUALITY: steady rounds in order, break a set BEFORE shape fails, walk 30s if breathing runs away. RPE 6-8; score = clean rounds. Wk1-2 steady, wk3 push the pace, wk4 easy. Not before a key rugby day.", [
+    ex("swing", "AMRAP round · 12 · crisp, no slop"), ex("gsq", "AMRAP round · 10 full ROM"), ex("pushup", "AMRAP round · 10 chest-to-floor"), ex("suitcase", "AMRAP round · 20m/side tall"), ex("deadbug", "AMRAP round · 8/side"), ex("bearcrawl", "finisher · 2×15m slow, flat back"),
   ]),
   // 10. MOBILITY & YOGA FLOW — active range + recovery, daily-friendly
   pg("mobility", "Mobility & Own-the-Range", "Mobility", 8, 3, "sage",
-    "~30 min. Active range, loaded end-range, breathe. Pre-stretch → contract → lift out → load → use. Nasal breathing, slow. Daily-friendly. Keeps everyday movement feeling good.", [
-    ex("catcow", "flow · 8/side"), ex("ninety", "flow · 8/side"), ex("hipcars", "control · 3/dir"), ex("shouldercars", "control · 3/dir"),
-    ex("deepsquat", "hold · 60s"), ex("jeff", "loaded range · 6 (light)"), ex("cossack", "loaded range · 6/side"), ex("wallslide", "shoulder · 8"),
-    ex("deadbug", "brace · 8/side"), ex("hollow", "brace · 20s"),
+    "~30 min · Own the range: pre-stretch → contract 5s in the stretch → lift actively out → load lightly → use it. Nasal breathing, everything slow. One steady round, no rest needed. Daily-friendly — great after hard sessions.", [
+    ex("catcow", "flow · 8/side · move with the breath"), ex("ninety", "flow · 8/side slow"), ex("hipcars", "control · 3/dir · biggest circle"), ex("shouldercars", "control · 3/dir"),
+    ex("deepsquat", "hold · 60s · pry + breathe"), ex("jeff", "loaded range · 6 light · 5s down"), ex("cossack", "loaded range · 6/side · sit in"), ex("wallslide", "shoulder · 8 · ribs down"),
+    ex("deadbug", "brace · 8/side · slow exhale"), ex("hollow", "brace · 20s · ribs down"),
   ]),
 ];
