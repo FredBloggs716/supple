@@ -16,6 +16,7 @@ import { getWorkspaceHandler, putWorkspaceHandler } from "./workspace";
 import { createInvitation, memberActions } from "./member";
 import { leaderboard } from "./leaderboard";
 import { uploadVideo, serveVideo } from "./video";
+import { clientAccess } from "./clients";
 
 export type { Env };
 
@@ -85,6 +86,16 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
   }
   if (path === "/api/leaderboard" && m === "GET") {
     return leaderboard(req, env, await authenticate(req, env));
+  }
+
+  const accessMatch = /^\/api\/clients\/([^/]+)\/access$/.exec(path);
+  if (accessMatch && m === "POST") {
+    return clientAccess(
+      req,
+      env,
+      await authenticate(req, env, { write: true }),
+      decodeURIComponent(accessMatch[1]),
+    );
   }
 
   if (path.startsWith("/api/videos/")) {

@@ -3248,3 +3248,26 @@ tr:last-child td {
 .workout-row:has(.inline-technique) {
   flex-wrap: wrap;
 }
+
+/* Exercise-card video thumbnails (YouTube poster frames) */
+.exercise-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.exercise-visual.has-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11, 20, 51, 0.55), rgba(11, 20, 51, 0.08) 45%, rgba(11, 20, 51, 0.5));
+}
+.exercise-visual.has-thumb .eyebrow,
+.exercise-visual.has-thumb .exercise-index {
+  color: #fff;
+  z-index: 2;
+}
+.exercise-visual.has-thumb .play-button {
+  z-index: 2;
+}

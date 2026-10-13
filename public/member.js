@@ -162,11 +162,15 @@ export function startMemberApp(session) {
     const list = data.exercises.filter((e) =>
       (e.name + " " + e.category).toLowerCase().includes(query.toLowerCase()),
     );
+    const thumb = (e) => {
+      const m = String(e.videoUrl || "").match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+      return m ? `<img class="exercise-thumb" src="https://i.ytimg.com/vi/${m[1]}/hqdefault.jpg" alt="" loading="lazy">` : "";
+    };
     return (
       list
         .map(
           (e, i) =>
-            `<article class="panel exercise-card"><div class="exercise-visual"><span class="eyebrow">THE MOVEMENT LIBRARY</span>${icon("dumbbell")}<span class="exercise-index">STC / ${String(i + 1).padStart(3, "0")}</span><button class="play-button" data-member-action="exercise" data-id="${e.id}" aria-label="View ${esc(e.name)}">${icon(e.video ? "play" : "arrow")}</button></div><div class="programme-body"><h3>${esc(e.name)}</h3><div class="programme-meta"><span>${esc(e.equipment)}</span><span>${e.video ? "Video demonstration" : "Technique guide"}</span></div><div class="exercise-category"><span class="pill neutral">${esc(e.category)}</span>${btn("View", "exercise", "arrow", "small", `data-id="${e.id}"`)}</div></div></article>`,
+            `<article class="panel exercise-card"><div class="exercise-visual${thumb(e) ? " has-thumb" : ""}">${thumb(e)}<span class="eyebrow">THE MOVEMENT LIBRARY</span>${thumb(e) ? "" : icon("dumbbell")}<span class="exercise-index">STC / ${String(i + 1).padStart(3, "0")}</span><button class="play-button" data-member-action="exercise" data-id="${e.id}" aria-label="View ${esc(e.name)}">${icon(e.video || e.videoUrl ? "play" : "arrow")}</button></div><div class="programme-body"><h3>${esc(e.name)}</h3><div class="programme-meta"><span>${esc(e.equipment)}</span><span>${e.video || e.videoUrl ? "Video demonstration" : "Technique guide"}</span></div><div class="exercise-category"><span class="pill neutral">${esc(e.category)}</span>${btn("View", "exercise", "arrow", "small", `data-id="${e.id}"`)}</div></div></article>`,
         )
         .join("") ||
       '<div class="empty-state">No movements found. Try another search.</div>'

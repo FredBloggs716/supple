@@ -364,11 +364,15 @@ if (session.user.role === "member") {
           .toLowerCase()
           .includes(ui.search.toLowerCase()),
     );
+    const thumb = (e) => {
+      const m = String(e.videoUrl || "").match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+      return m ? `<img class="exercise-thumb" src="https://i.ytimg.com/vi/${m[1]}/hqdefault.jpg" alt="" loading="lazy">` : "";
+    };
     return list.length
       ? list
           .map(
             (e, i) =>
-              `<article class="panel exercise-card"><div class="exercise-visual"><span class="eyebrow">THE MOVEMENT LIBRARY</span>${icon(e.category === "Mobility" ? "heart" : e.category === "Conditioning" ? "zap" : e.category === "Core" ? "target" : "dumbbell")}<span class="exercise-index">STC / ${String(data.exercises.indexOf(e) + 1).padStart(3, "0")}</span><button class="play-button" data-action="exercise" data-id="${e.id}" aria-label="View ${esc(e.name)}">${icon(e.video ? "play" : "arrow")}</button></div><div class="programme-body"><h3>${esc(e.name)}</h3><div class="programme-meta"><span>${icon("dumbbell")}${esc(e.equipment)}</span><span>${e.video ? "Video available" : "Technique guide"}</span></div><div class="exercise-category">${pill(e.category, "neutral")}${link("View exercise", "exercise", `data-id="${e.id}"`)}</div></div></article>`,
+              `<article class="panel exercise-card"><div class="exercise-visual${thumb(e) ? " has-thumb" : ""}">${thumb(e)}<span class="eyebrow">THE MOVEMENT LIBRARY</span>${thumb(e) ? "" : icon(e.category === "Mobility" ? "heart" : e.category === "Conditioning" ? "zap" : e.category === "Core" ? "target" : "dumbbell")}<span class="exercise-index">STC / ${String(data.exercises.indexOf(e) + 1).padStart(3, "0")}</span><button class="play-button" data-action="exercise" data-id="${e.id}" aria-label="View ${esc(e.name)}">${icon(e.video || e.videoUrl ? "play" : "arrow")}</button></div><div class="programme-body"><h3>${esc(e.name)}</h3><div class="programme-meta"><span>${icon("dumbbell")}${esc(e.equipment)}</span><span>${e.video || e.videoUrl ? "Video available" : "Technique guide"}</span></div><div class="exercise-category">${pill(e.category, "neutral")}${link("View exercise", "exercise", `data-id="${e.id}"`)}</div></div></article>`,
           )
           .join("")
       : empty(
@@ -519,7 +523,7 @@ if (session.user.role === "member") {
     openModal(
       c.name,
       "A clear picture, so you can coach the person.",
-      `<div class="profile-head">${avatar(c, true)}<div><h3>${esc(c.name)}</h3><p>${esc(c.email)}</p><div style="margin-top:9px">${pill(c.status, c.status === "On track" ? "success" : "warning", true)}</div></div></div><div class="profile-stats"><div class="profile-stat"><small>This week</small><strong>${totalAttendance(c.id)} sessions</strong></div><div class="profile-stat"><small>Adherence</small><strong>${c.adherence}%</strong></div><div class="profile-stat"><small>Streak</small><strong>${c.streak} weeks</strong></div></div><div class="info-row"><span>Training goal</span><strong>${esc(c.goal)}</strong></div><div class="info-row"><span>Member since</span><strong>${dateLabel(c.joined, { day: "numeric", month: "long", year: "numeric" })}</strong></div><form id="assign-form" data-client="${c.id}" style="margin-top:18px"><label class="field"><span>Assigned programme</span><select name="programme"><option value="">No programme</option>${data.programmes.map((p) => `<option value="${p.id}" ${c.programme === p.id ? "selected" : ""}>${esc(p.name)} · ${p.weeks} weeks</option>`).join("")}</select></label><button class="btn primary small" type="submit">Save assignment${icon("check")}</button></form><div class="heading-actions" style="margin:20px 0">${btn("Create sign-in link", "invite-client", "mail", "primary small", `data-id="${c.id}"`)}${btn("View progress", "client-progress", "chart", "small", `data-id="${c.id}"`)}${btn("Nutrition", "client-nutrition", "nutrition", "small", `data-id="${c.id}"`)}</div>${c.checkin ? `<div class="checkin-item"><div class="checkin-top"><strong>Latest check-in</strong>${pill("Needs review", "warning")}</div><blockquote>${esc(c.checkin)}</blockquote>${btn("Mark as reviewed", "review-checkin", "check", "small", `data-id="${c.id}"`)}</div>` : ""}${trainingHistory(c.id)}<h3 style="margin:24px 0 14px">Coach notes</h3>${c.notes.length ? c.notes.map((n) => `<div class="client-note">${esc(n.text)}<time>${dateLabel(n.date)}</time></div>`).join("") : '<p class="muted" style="font-size:11px;margin-bottom:16px">The little details that make your coaching personal.</p>'}<form id="note-form" data-client="${c.id}"><label class="field"><span>Add a private note</span><textarea name="note" maxlength="2000" placeholder="What would you like to remember for next time?" required></textarea></label><button class="btn small" type="submit">Save note${icon("plus")}</button></form>`,
+      `<div class="profile-head">${avatar(c, true)}<div><h3>${esc(c.name)}</h3><p>${esc(c.email)}</p><div style="margin-top:9px">${pill(c.status, c.status === "On track" ? "success" : "warning", true)}</div></div></div><div class="profile-stats"><div class="profile-stat"><small>This week</small><strong>${totalAttendance(c.id)} sessions</strong></div><div class="profile-stat"><small>Adherence</small><strong>${c.adherence}%</strong></div><div class="profile-stat"><small>Streak</small><strong>${c.streak} weeks</strong></div></div><div class="info-row"><span>Training goal</span><strong>${esc(c.goal)}</strong></div><div class="info-row"><span>Member since</span><strong>${dateLabel(c.joined, { day: "numeric", month: "long", year: "numeric" })}</strong></div><form id="assign-form" data-client="${c.id}" style="margin-top:18px"><label class="field"><span>Assigned programme</span><select name="programme"><option value="">No programme</option>${data.programmes.map((p) => `<option value="${p.id}" ${c.programme === p.id ? "selected" : ""}>${esc(p.name)} · ${p.weeks} weeks</option>`).join("")}</select></label><button class="btn primary small" type="submit">Save assignment${icon("check")}</button></form><div class="heading-actions" style="margin:20px 0">${btn("Create sign-in link", "invite-client", "mail", "primary small", `data-id="${c.id}"`)}${btn("View progress", "client-progress", "chart", "small", `data-id="${c.id}"`)}${btn("Nutrition", "client-nutrition", "nutrition", "small", `data-id="${c.id}"`)}</div>${c.checkin ? `<div class="checkin-item"><div class="checkin-top"><strong>Latest check-in</strong>${pill("Needs review", "warning")}</div><blockquote>${esc(c.checkin)}</blockquote>${btn("Mark as reviewed", "review-checkin", "check", "small", `data-id="${c.id}"`)}</div>` : ""}${trainingHistory(c.id)}<h3 style="margin:24px 0 14px">Coach notes</h3>${c.notes.length ? c.notes.map((n) => `<div class="client-note">${esc(n.text)}<time>${dateLabel(n.date)}</time></div>`).join("") : '<p class="muted" style="font-size:11px;margin-bottom:16px">The little details that make your coaching personal.</p>'}<form id="note-form" data-client="${c.id}"><label class="field"><span>Add a private note</span><textarea name="note" maxlength="2000" placeholder="What would you like to remember for next time?" required></textarea></label><button class="btn small" type="submit">Save note${icon("plus")}</button></form><h3 style="margin:24px 0 10px">Access</h3><p class="field-help" style="margin-bottom:12px">Pause this client's sign-in, or remove them from the club entirely.</p><div class="heading-actions">${btn("Remove sign-in access", "revoke-access", "shield", "small", `data-id="${c.id}"`)}${btn("Delete client", "delete-client", "x", "small", `data-id="${c.id}"`)}</div>`,
     );
   }
   function addClientModal() {
@@ -803,6 +807,41 @@ if (session.user.role === "member") {
         "Share this private link directly with your client. It expires in 72 hours.",
         `<label class="field"><span>Private sign-in link</span><input id="invite-link" readonly value="${esc(url.href)}"></label><p class="field-help">This link lets the client set a password. Creating a new link replaces any older unused link. For an existing account, it resets their password.</p><div class="modal-footer">${btn("Copy link", "copy-invite", "mail", "primary")}</div>`,
       );
+    },
+    "revoke-access": (el) => {
+      const c = client(el.dataset.id);
+      openModal(
+        "Pause their access?",
+        "They keep their place and their records — they just can't sign in.",
+        `<p style="font-size:12px;line-height:1.8">This signs ${esc(c?.name || "this client")} out everywhere, disables their password and cancels any invite links. All their training records stay safe. Send a new sign-in link whenever you want to restore access.</p><div class="modal-footer">${btn("Remove access", "revoke-access-confirm", "shield", "primary", `data-id="${el.dataset.id}"`)}</div>`,
+      );
+    },
+    "revoke-access-confirm": async (el) => {
+      await api(`/api/clients/${encodeURIComponent(el.dataset.id)}/access`, {
+        method: "POST",
+        body: { action: "revoke" },
+      });
+      closeModal();
+      toast("Sign-in access removed. Send a new link to restore it.");
+    },
+    "delete-client": (el) => {
+      const c = client(el.dataset.id);
+      openModal(
+        "Delete this client?",
+        "This can't be undone.",
+        `<p style="font-size:12px;line-height:1.8">This permanently removes ${esc(c?.name || "this client")} and all of their records — training logs, results, meals and attendance. Their sign-in stops working immediately.</p><div class="modal-footer">${btn("Delete client", "delete-client-confirm", "x", "accent", `data-id="${el.dataset.id}"`)}</div>`,
+      );
+    },
+    "delete-client-confirm": async (el) => {
+      const result = await api(`/api/clients/${encodeURIComponent(el.dataset.id)}/access`, {
+        method: "POST",
+        body: { action: "delete" },
+      });
+      data = result.workspace;
+      revision = result.revision;
+      closeModal();
+      redraw();
+      toast("Client removed from the club.");
     },
     "copy-invite": async () => {
       const input = $("#invite-link");
