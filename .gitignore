@@ -12,6 +12,7 @@ node_modules/
 
 # Cloudflare / node
 STC_SETUP_TOKEN.txt
+ADMIN_PASSWORD.txt
 node_modules/
 .wrangler/
 .dev.vars
