@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://socialtrainingclub.uk/sitemap.xml
