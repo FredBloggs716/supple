@@ -38,7 +38,7 @@ npm run wrangler -- secret put STC_SETUP_TOKEN
 npm run deploy
 ```
 
-Wrangler prints your URL, e.g. `https://supple.<your-subdomain>.workers.dev`.
+The app is served at **https://socialtrainingclub.uk** (custom domain; www works too). The workers.dev URL is disabled.
 Open it, create your coach account using the setup code from step 4, and you're
 live. The address works on phones and computers.
 
