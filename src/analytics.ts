@@ -58,6 +58,19 @@ export function viewFor(user: any, wIn: any): any {
   const cid = user.client;
   const own = w.clients.find((c: any) => c.id === cid);
   if (!own) throw new APIError("This client account is no longer available.", 403);
+  // Club feed: own posts + posts from members who opted into club sharing,
+  // annotated with display names (first name + last initial) before clients
+  // are stripped from the view.
+  const display = (name: string) => {
+    const parts = String(name).trim().split(/\s+/);
+    return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : parts[0];
+  };
+  const optIn = new Map(w.clients.map((c: any) => [c.id, !!c.leaderboardOptIn]));
+  const names = new Map(w.clients.map((c: any) => [c.id, display(c.name)]));
+  w.feed = (Array.isArray(w.feed) ? w.feed : [])
+    .filter((f: any) => f.client === cid || optIn.get(f.client))
+    .slice(0, 50)
+    .map((f: any) => ({ ...f, name: names.get(f.client) || "A member" }));
   own.notes = [];
   w.clients = [own];
   w.programmes = w.programmes.filter((p: any) => p.id === own.programme);
@@ -75,7 +88,11 @@ export function viewFor(user: any, wIn: any): any {
     Object.entries(w.water).filter(([k]) => k.startsWith(cid + "-")),
   );
   w.activity = [];
-  w.settings = { club: w.settings.club, coach: w.settings.coach };
+  w.settings = {
+    club: w.settings.club,
+    coach: w.settings.coach,
+    ...(w.settings.whatsapp ? { whatsapp: w.settings.whatsapp } : {}),
+  };
   w.readNotifications = [];
   return w;
 }

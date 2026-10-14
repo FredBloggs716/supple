@@ -39,6 +39,9 @@ export async function signup(req: Request, env: Env): Promise<Response> {
   if (body.consent !== true) {
     throw new APIError("Please read and accept the declaration to join.");
   }
+  if (body.age18 !== true) {
+    throw new APIError("You must be 18 or over to join the club.");
+  }
 
   const { w, revision } = await getWorkspace(env.DB);
   if (
@@ -65,7 +68,7 @@ export async function signup(req: Request, env: Env): Promise<Response> {
     notes: [],
     targets: { calories: 2000, protein: 150, carbs: 200, fat: 60 },
     parq: { answers: parq, flagged, date: today() },
-    consent: { acceptedAt: today(), version: 1 },
+    consent: { acceptedAt: today(), version: 2, age18: true, healthData: true },
     source: "self",
   });
   w.activity.unshift({

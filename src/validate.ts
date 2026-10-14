@@ -66,6 +66,7 @@ export function validateWorkspace(w: any): Workspace {
   }
   for (const k of ["coach", "club"]) text(w.settings[k], k, 80);
   email(w.settings.email);
+  if (w.settings.whatsapp) text(w.settings.whatsapp, "WhatsApp link", 200, true);
 
   const ids: Record<string, Set<string>> = {};
   for (const key of COLLECTIONS) {
@@ -117,6 +118,7 @@ export function validateWorkspace(w: any): Workspace {
         throw new APIError("Invalid PAR-Q record.");
       }
       date(c.parq.date);
+      if (c.parq.cleared) date(c.parq.cleared);
     }
     if (c.consent) date(c.consent.acceptedAt);
   }

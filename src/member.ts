@@ -30,8 +30,47 @@ export async function createInvitation(req: Request, env: Env, user: UserRow): P
 function firstName(name: string): string {
   return name.trim().split(/\s+/)[0];
 }
+
+// Club feed: one card per session per day (topped up as the session merges),
+// plus a card per club-test result. Visibility is filtered per-member in
+// viewFor by leaderboard consent.
+function upsertSessionFeed(w: any, cid: string, p: any, log: any): void {
+  w.feed = Array.isArray(w.feed) ? w.feed : [];
+  const xp = Math.round(50 * ((log.completedCount ?? 1) / (log.exerciseCount || 1)));
+  const detail = `${log.completedCount}/${log.exerciseCount} exercises · ${xp} XP`;
+  const existing = w.feed.find(
+    (f: any) => f.kind === "session" && f.client === cid && f.date === today() && f.ref === p.id,
+  );
+  if (existing) existing.detail = detail;
+  else
+    w.feed.unshift({
+      id: randomHex(12),
+      kind: "session",
+      client: cid,
+      date: today(),
+      ref: p.id,
+      title: p.name,
+      detail,
+      kudos: [],
+    });
+  w.feed = w.feed.slice(0, 200);
+}
+
+function pushTestFeed(w: any, cid: string, kind: string, value: number): void {
+  w.feed = Array.isArray(w.feed) ? w.feed : [];
+  w.feed.unshift({
+    id: randomHex(12),
+    kind: "test",
+    client: cid,
+    date: today(),
+    title: kind,
+    value,
+    kudos: [],
+  });
+  w.feed = w.feed.slice(0, 200);
+}
 function applyMemberAction(w: any, user: UserRow, body: any): void {
-  const cid = user.client;
+  const cid = user.client as string; // members always have a client (guarded below)
   const c = w.clients.find((c: any) => c.id === cid);
   if (!c) throw new APIError("This account is no longer available.", 403);
   const action = body.action;
@@ -78,6 +117,7 @@ function applyMemberAction(w: any, user: UserRow, body: any): void {
       for (const id of completed) done.add(id);
       existing.completedCount = done.size;
       existing.exerciseCount = p.exercises.length;
+      upsertSessionFeed(w, cid, p, existing);
     } else {
       w.logs.push({
         id: recordId,
@@ -98,6 +138,7 @@ function applyMemberAction(w: any, user: UserRow, body: any): void {
         icon: "checkCircle",
         tone: "green",
       });
+      upsertSessionFeed(w, cid, p, w.logs[w.logs.length - 1]);
     }
   } else if (action === "meal") {
     const meal: any = {
@@ -123,6 +164,15 @@ function applyMemberAction(w: any, user: UserRow, body: any): void {
       throw new APIError("Use whole numbers for this test.");
     }
     w.measures.push({ id: recordId, client: cid, kind, value, date: date(body.date, false) });
+    // Club tests go to the feed; Body weight stays private.
+    if (kind !== "Body weight") pushTestFeed(w, cid, kind, value);
+  } else if (action === "kudos") {
+    const item = (Array.isArray(w.feed) ? w.feed : []).find((f: any) => f.id === body.id);
+    if (!item) throw new APIError("That post is no longer on the feed.");
+    item.kudos = Array.isArray(item.kudos) ? item.kudos : [];
+    const i = item.kudos.indexOf(cid);
+    if (i >= 0) item.kudos.splice(i, 1);
+    else item.kudos.push(cid);
   } else if (action === "checkin") {
     c.checkin = text(body.text, "check-in", 2000);
     c.status = "Needs attention";

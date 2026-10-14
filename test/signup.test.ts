@@ -10,6 +10,7 @@ function body(over: any = {}) {
     password: "a brand new member pw 1",
     parq: NO,
     consent: true,
+    age18: true,
     ...over,
   };
 }
@@ -54,6 +55,8 @@ describe("self-serve signup", () => {
     expect((await req("/api/auth/signup", "POST", body({ parq: [true, false] }))).status).toBe(400);
     expect((await req("/api/auth/signup", "POST", body({ parq: ["yes", "no", "no", "no", "no", "no", "no"] }))).status).toBe(400);
     expect((await req("/api/auth/signup", "POST", body({ consent: false }))).status).toBe(400);
+    expect((await req("/api/auth/signup", "POST", body({ age18: false }))).status).toBe(400);
+    expect((await req("/api/auth/signup", "POST", body({ age18: undefined }))).status).toBe(400);
   });
 
   it("rejects duplicate emails (existing client or account)", async () => {
