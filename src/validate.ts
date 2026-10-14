@@ -66,7 +66,17 @@ export function validateWorkspace(w: any): Workspace {
   }
   for (const k of ["coach", "club"]) text(w.settings[k], k, 80);
   email(w.settings.email);
-  if (w.settings.whatsapp) text(w.settings.whatsapp, "WhatsApp link", 200, true);
+  if (w.settings.whatsapp) {
+    text(w.settings.whatsapp, "WhatsApp link", 200, true);
+    // Must be a real https URL — blocks javascript:/data: URIs reaching members.
+    let ok = false;
+    try {
+      ok = new URL(w.settings.whatsapp).protocol === "https:";
+    } catch {
+      ok = false;
+    }
+    if (!ok) throw new APIError("The WhatsApp link must be a full https:// address.");
+  }
 
   const ids: Record<string, Set<string>> = {};
   for (const key of COLLECTIONS) {

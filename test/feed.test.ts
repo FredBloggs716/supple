@@ -66,6 +66,17 @@ describe("club feed", () => {
     expect(off.json.workspace.feed[0].kudos.length).toBe(0);
   });
 
+  it("rejects non-https whatsapp links (javascript: URI blocked)", async () => {
+    const coach = await setupCoach(fullWorkspace());
+    const coachWs = await req("/api/workspace", "GET", undefined, { cookie: coach.cookie });
+    const w = coachWs.json.workspace;
+    for (const bad of ["javascript:alert(1)", "data:text/html,hi", "chat.whatsapp.com/abc", "http://chat.whatsapp.com/abc"]) {
+      w.settings.whatsapp = bad;
+      const put = await req("/api/workspace", "PUT", { workspace: w, revision: coachWs.json.revision }, coach);
+      expect(put.status).toBe(400);
+    }
+  });
+
   it("whatsapp link reaches members only when set", async () => {
     const coach = await setupCoach(fullWorkspace());
     const m = await memberLogin();
