@@ -11,6 +11,7 @@ import {
   inviteInfo,
   acceptInvite,
 } from "./auth";
+import { signup } from "./signup";
 import { authenticate } from "./guards";
 import { getWorkspaceHandler, putWorkspaceHandler } from "./workspace";
 import { createInvitation, memberActions } from "./member";
@@ -66,6 +67,7 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
   if (m === "POST" && path === "/api/auth/login") return authLogin(req, env);
   if (m === "POST" && path === "/api/auth/logout") return authLogout(req, env);
   if (m === "POST" && path === "/api/auth/accept") return acceptInvite(req, env);
+  if (m === "POST" && path === "/api/auth/signup") return signup(req, env);
   if (m === "POST" && path === "/api/password") return changePassword(req, env);
   if (m === "GET" && path.startsWith("/api/invitations/")) {
     return inviteInfo(req, env, decodeURIComponent(path.slice("/api/invitations/".length)));

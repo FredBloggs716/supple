@@ -108,6 +108,17 @@ export function validateWorkspace(w: any): Workspace {
       text(c.checkin, "check-in", 2000, true);
     }
     for (const k of ["calories", "protein", "carbs", "fat"]) number(c.targets[k], k, 1, 10000);
+    if (c.parq) {
+      if (
+        !Array.isArray(c.parq.answers) ||
+        c.parq.answers.length !== 7 ||
+        c.parq.answers.some((a: any) => typeof a !== "boolean")
+      ) {
+        throw new APIError("Invalid PAR-Q record.");
+      }
+      date(c.parq.date);
+    }
+    if (c.consent) date(c.consent.acceptedAt);
   }
   if (new Set(w.clients.map((c: any) => c.email.toLowerCase())).size !== w.clients.length) {
     throw new APIError("Client email addresses must be unique.");
