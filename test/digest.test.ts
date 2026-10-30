@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { memberStats, renderMemberEmail, renderCoachEmail, runWeeklyDigest, xpFor } from "../src/digest";
 import { today } from "../src/time";
+import { weeklyTests } from "../src/tests";
 
 function iso(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -56,10 +57,37 @@ describe("weekly digest", () => {
     expect(s.xp).toBe(25);
     expect(s.goal).toBe(3);
     expect(s.lifts[0]).toMatchObject({ name: "Goblet Squat", weight: 60, reps: 5 });
-    expect(s.tests[0].kind).toBe("2 km row");
-    expect(s.tests[0].delta.good).toBe(true); // 450s beats 480s — lower is better
+    // The row result lands in the weekly battery section when "2 km row" is in
+    // this week's rotation, otherwise under other tests — either way the delta
+    // must know lower is better.
+    const row = [...s.battery, ...s.tests].find((t: any) => t.kind === "2 km row");
+    expect(row.delta.good).toBe(true); // 450s beats 480s
     expect(s.rank).toBe(1);
     expect(s.of).toBe(2);
+  });
+
+  it("weekly battery ranks members per test, direction-aware", () => {
+    const w = workspace();
+    const t = weeklyTests(today())[0]; // whatever this week's first test is
+    // c1 logs the better result, c2 the worse one (direction-aware).
+    const better = t.dir === "lower" ? 100 : 200;
+    const worse = t.dir === "lower" ? 200 : 100;
+    w.measures.push(
+      { id: "b1", client: "c1", date: today(), kind: t.kind, value: better },
+      { id: "b2", client: "c2", date: today(), kind: t.kind, value: worse },
+    );
+    const s1 = memberStats(w, w.clients[0]);
+    const s2 = memberStats(w, w.clients[1]);
+    const b1 = s1.battery.find((b: any) => b.kind === t.kind);
+    const b2 = s2.battery.find((b: any) => b.kind === t.kind);
+    expect(b1.position).toBe(1);
+    expect(b2.position).toBe(2);
+    expect(b1.entrants).toBe(2);
+    // Un-logged battery tests show as positionless, and the email renders chips.
+    expect(s1.battery.length).toBe(3);
+    const html = renderMemberEmail(s1);
+    expect(html).toContain("THIS WEEK’S CLUB TESTS");
+    expect(html).toContain("1st of 2");
   });
 
   it("member email renders the headline numbers and brand frame", () => {

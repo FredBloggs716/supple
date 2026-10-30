@@ -7,7 +7,7 @@ import { Env } from "./env";
 import { getWorkspace } from "./db";
 import { analytics } from "./analytics";
 import { today } from "./time";
-import { testByKind } from "./tests";
+import { testByKind, weeklyTests } from "./tests";
 
 // ---- date helpers (UTC maths over YYYY-MM-DD keys, like analytics.ts) -------
 function parse(s: string): Date {
@@ -88,10 +88,46 @@ export function memberStats(w: any, c: any): any {
     .slice(0, 3)
     .map((en) => ({ name: exName.get(en.exercise) || "Exercise", weight: en.weight, reps: en.reps }));
 
-  // Club tests logged this week, with an honest delta against the previous
-  // result of the same kind (direction-aware: lower is better for timed tests).
+  // This week's rotating test battery with the member's club position in each
+  // (latest result this week per member, direction-aware like the leaderboard).
+  const latestThisWeek = (cid: string, kind: string) =>
+    w.measures
+      .filter((m: any) => m.client === cid && m.kind === kind && m.date >= monday && m.date <= now)
+      .sort((a: any, b: any) => a.date.localeCompare(b.date))
+      .at(-1);
+  const battery = weeklyTests(now).map((t) => {
+    const entries = w.clients
+      .map((x: any) => ({ id: x.id, m: latestThisWeek(x.id, t.kind) }))
+      .filter((e: any) => e.m)
+      .sort((a: any, b: any) => (t.dir === "lower" ? a.m.value - b.m.value : b.m.value - a.m.value));
+    const idx = entries.findIndex((e: any) => e.id === c.id);
+    const mine = idx >= 0 ? entries[idx].m : null;
+    let delta: { text: string; good: boolean } | null = null;
+    if (mine) {
+      const prev = w.measures
+        .filter((x: any) => x.client === c.id && x.kind === t.kind && x.date < monday)
+        .sort((a: any, b: any) => a.date.localeCompare(b.date))
+        .at(-1);
+      if (prev && prev.value !== mine.value) {
+        const diff = mine.value - prev.value;
+        const good = t.dir === "lower" ? diff < 0 : diff > 0;
+        delta = { text: `${diff > 0 ? "+" : "−"}${fmtValue(t.kind, Math.abs(diff))} vs last time`, good };
+      }
+    }
+    return {
+      kind: t.kind,
+      shown: mine ? fmtValue(t.kind, mine.value) : null,
+      position: idx >= 0 ? idx + 1 : null,
+      entrants: entries.length,
+      delta,
+    };
+  });
+  const batteryKinds = new Set(battery.map((b) => b.kind));
+
+  // Any other tests logged this week (outside the battery), with an honest
+  // delta against the previous result (direction-aware).
   const tests = w.measures
-    .filter((m: any) => m.client === c.id && m.date >= monday && m.date <= now && m.kind !== "Body weight")
+    .filter((m: any) => m.client === c.id && m.date >= monday && m.date <= now && m.kind !== "Body weight" && !batteryKinds.has(m.kind))
     .map((m: any) => {
       const prev = w.measures
         .filter((x: any) => x.client === c.id && x.kind === m.kind && x.date < monday)
@@ -131,6 +167,7 @@ export function memberStats(w: any, c: any): any {
     trend,
     programme,
     lifts,
+    battery,
     tests,
     rank,
     of: totals.length,
@@ -228,6 +265,21 @@ export function renderMemberEmail(s: any): string {
     )
     .join("");
 
+  const ord = (n: number) => n + (["th", "st", "nd", "rd"][n % 100 > 10 && n % 100 < 14 ? 0 : n % 10 < 4 ? n % 10 : 0] || "th");
+  const posChip = (b: any) =>
+    b.position
+      ? `<span style="display:inline-block;background:${b.position === 1 ? GREEN : NAVY};color:#05060d;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;box-shadow:0 0 10px ${b.position === 1 ? GREEN : NAVY}">${ord(b.position)} of ${b.entrants}</span>`
+      : `<span style="display:inline-block;border:1px solid ${LINE};color:${MUTED};border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">Not logged</span>`;
+  const batteryRows = s.battery
+    .map(
+      (b: any) => `<tr><td style="${FONT}font-size:13px;color:${BODY};padding:10px 0;border-bottom:1px solid ${LINE}">${esc(b.kind)}
+      ${b.delta ? `<div style="${FONT}font-size:11px;font-weight:700;color:${b.delta.good ? GREEN : RED};margin-top:3px">${b.delta.good ? "▲" : "▼"} ${esc(b.delta.text)}</div>` : ""}</td>
+      <td align="right" style="${FONT}font-size:13px;border-bottom:1px solid ${LINE};white-space:nowrap">
+      ${b.shown ? `<strong style="color:${INK};margin-right:8px">${esc(b.shown)}</strong>` : ""}${posChip(b)}</td></tr>`,
+    )
+    .join("");
+  const batteryDone = s.battery.filter((b: any) => b.position).length;
+
   const testRows = s.tests
     .map(
       (t: any) => `<tr><td style="${FONT}font-size:13px;color:${BODY};padding:9px 0;border-bottom:1px solid ${LINE}">${esc(t.kind)}</td>
@@ -251,7 +303,16 @@ export function renderMemberEmail(s: any): string {
       : "") +
     section(label("LAST FOUR WEEKS") + trendBars) +
     (s.lifts.length ? section(label("STRONGEST WORK THIS WEEK") + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${liftRows}</table>`) : "") +
-    (s.tests.length ? section(label("CLUB TESTS THIS WEEK") + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${testRows}</table>`) : "") +
+    (s.battery.length
+      ? section(
+          label("THIS WEEK’S CLUB TESTS") +
+            `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${batteryRows}</table>` +
+            (batteryDone < s.battery.length
+              ? `<div style="${FONT}font-size:11px;color:${MUTED};margin-top:12px">${batteryDone} of ${s.battery.length} logged — positions update as results land. There's still time this week.</div>`
+              : ""),
+        )
+      : "") +
+    (s.tests.length ? section(label("OTHER RESULTS THIS WEEK") + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${testRows}</table>`) : "") +
     section(
       `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
       <td style="background:${BG};border:1px solid ${NAVY};border-radius:12px;padding:22px 26px;box-shadow:0 0 18px rgba(0,229,255,0.25)">
