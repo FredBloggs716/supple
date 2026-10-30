@@ -102,6 +102,13 @@ export function applyMemberAction(w: any, user: UserRow, body: any): void {
       completed.length,
       Math.min(100, Math.floor(Number(body.total)) || p.exercises.length),
     );
+    // Which weekly timeline slot this log covers (index into the programme's
+    // session rotation). Optional: older clients and flat-list programmes omit it.
+    let slot: number | undefined;
+    if (body.session !== undefined && body.session !== null) {
+      slot = number(body.session, "session", 0, 99);
+      if (slot !== Math.trunc(slot)) throw new APIError("Please choose a valid session.");
+    }
     const entries = body.entries ?? [];
     if (!Array.isArray(entries) || entries.length > 100) throw new APIError("Invalid training log.");
     for (const entry of entries) {
@@ -111,10 +118,16 @@ export function applyMemberAction(w: any, user: UserRow, body: any): void {
       number(entry.weight, "working load", 0, 1000);
       number(entry.reps, "reps", 1, 1000);
     }
-    // Same day + same programme = ONE session. Logging again later in the day
-    // tops up the existing log instead of counting a second session.
+    // Same day + same programme + same timeline slot = ONE session. Logging
+    // again later in the day tops up the existing log instead of counting a
+    // second session. A catch-up for a DIFFERENT slot on the same day stays a
+    // separate session (that's the point of catching up).
     const existing = w.logs.find(
-      (l: any) => l.client === cid && l.date === today() && l.programme === p.id,
+      (l: any) =>
+        l.client === cid &&
+        l.date === today() &&
+        l.programme === p.id &&
+        (l.session ?? null) === (slot ?? null),
     );
     if (existing) {
       const entryList: any[] = Array.isArray(existing.entries) ? existing.entries : [];
@@ -136,6 +149,7 @@ export function applyMemberAction(w: any, user: UserRow, body: any): void {
         date: today(),
         type: "Programme session",
         programme: p.id,
+        ...(slot !== undefined ? { session: slot } : {}),
         entries,
         // Partial sessions earn proportional club points (legacy logs = full).
         completedCount: completed.length,

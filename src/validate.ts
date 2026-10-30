@@ -191,6 +191,13 @@ export function validateWorkspace(w: any): Workspace {
       date(item.date);
     }
   }
+  for (const l of w.logs) {
+    // Timeline slot (index into the programme's session rotation) — optional.
+    if (l.session !== undefined && l.session !== null) {
+      number(l.session, "session", 0, 99);
+      if (l.session !== Math.trunc(l.session)) throw new APIError("Please choose a valid session.");
+    }
+  }
   for (const m of w.measures) {
     if (!MEASURE_KINDS.has(m.kind)) {
       throw new APIError("Invalid measurement type.");

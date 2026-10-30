@@ -89,8 +89,13 @@ export function startMemberApp(session) {
     return p ? data.logs.find((l) => l.date === TODAY && l.programme === p.id) : null;
   };
   const startLabel = (full, pid = null) => {
-    const l = sessionToday(pid);
-    if (!l) return full ? "Start your session" : "Start session";
+    const p = plan(pid);
+    const s = p ? activeSlot(p) : null;
+    const l = s ? s.log : sessionToday(pid);
+    if (!l) {
+      if (s && s.state === "missed") return "Catch up this week's session";
+      return full ? "Start your session" : "Start session";
+    }
     return (l.completedCount ?? 1) >= (l.exerciseCount ?? 1) ? "Session done — review" : "Continue today's session";
   };
   const lastSession = (pid) => {
@@ -99,11 +104,68 @@ export function startMemberApp(session) {
       .sort((a, b) => b.date.localeCompare(a.date))[0] || null;
   };
   const programmeSessions = (pid) => data.logs.filter((l) => l.programme === pid).length;
-  const weekNum = (p) => p ? Math.min(p.weeks, Math.floor(programmeSessions(p.id) / Math.max(1, p.frequency)) + 1) : 1;
-  const currentSession = (p) => {
-    if (!p || !Array.isArray(p.sessions) || !p.sessions.length) return null;
-    return p.sessions[programmeSessions(p.id) % p.sessions.length];
+  // ---- Weekly timeline ------------------------------------------------------
+  // Sessions live on a calendar, not a counter: training days derive from the
+  // programme's sessions/week (3 -> Mon/Wed/Fri), so the schedule manages
+  // itself with no coach admin. Day indices are Monday-first (0=Mon … 6=Sun).
+  const TRAINING_DAYS = { 1: [0], 2: [0, 3], 3: [0, 2, 4], 4: [0, 1, 3, 4], 5: [0, 1, 2, 3, 4], 6: [0, 1, 2, 3, 4, 5], 7: [0, 1, 2, 3, 4, 5, 6] };
+  const trainingDays = (p) => TRAINING_DAYS[Math.min(7, Math.max(1, Math.round(p?.frequency || 3)))];
+  // The programme calendar starts the Monday of the week of the first log, so
+  // week numbers advance with real time rather than with how often you logged.
+  const programmeAnchor = (p) => {
+    const first = data.logs
+      .filter((l) => l.programme === p.id)
+      .reduce((a, l) => (!a || l.date < a ? l.date : a), null);
+    return mondayOf(first || TODAY);
   };
+  const weekNum = (p) => {
+    if (!p) return 1;
+    const elapsed = Math.round(
+      (new Date(mondayOf(TODAY) + "T12:00:00") - new Date(programmeAnchor(p) + "T12:00:00")) / 86400000,
+    );
+    return Math.min(p.weeks, Math.max(1, Math.floor(elapsed / 7) + 1));
+  };
+  // Which session definition the k-th training day of the current week shows:
+  // the rotation advances straight through the programme's weeks.
+  const sessionForSlot = (p, k) => {
+    if (!p || !Array.isArray(p.sessions) || !p.sessions.length) return null;
+    const freq = trainingDays(p).length;
+    return p.sessions[((weekNum(p) - 1) * freq + k) % p.sessions.length];
+  };
+  // The log covering slot k of the current week: new logs carry their slot;
+  // legacy logs (no session field) match by exact date instead.
+  const slotLog = (p, k, date) =>
+    data.logs.find(
+      (l) =>
+        l.programme === p.id &&
+        ((l.session === k && l.date >= mondayOf(TODAY) && l.date <= TODAY) ||
+          (l.session === undefined && l.date === date)),
+    ) || null;
+  // This week's plan: one entry per training day with its timeline state.
+  const weekPlan = (p) => {
+    if (!p || !Array.isArray(p.sessions) || !p.sessions.length) return [];
+    return trainingDays(p).map((wd, k) => {
+      const date = offsetDay(mondayOf(TODAY), wd);
+      const log = slotLog(p, k, date);
+      const done = log && (log.completedCount ?? 1) >= (log.exerciseCount ?? 1);
+      const state = done ? "done" : log ? "started" : date === TODAY ? "today" : date < TODAY ? "missed" : "future";
+      return { k, date, sess: sessionForSlot(p, k), log, state };
+    });
+  };
+  // What to train now: today's slot (or the one started today), else the
+  // earliest missed slot to catch up, else the next upcoming session.
+  const activeSlot = (p) => {
+    const plan7 = weekPlan(p);
+    if (!plan7.length) return null;
+    return (
+      plan7.find((s) => s.date === TODAY && s.state !== "done") ||
+      plan7.find((s) => s.state === "missed") ||
+      plan7.find((s) => s.state === "future") ||
+      plan7.find((s) => s.date === TODAY) ||
+      plan7[plan7.length - 1]
+    );
+  };
+  const currentSession = (p) => activeSlot(p)?.sess || null;
   const results = () =>
     data.measures
       .filter((m) => m.kind === resultKind)
@@ -138,9 +200,9 @@ export function startMemberApp(session) {
   function metric(label, value, unit = "") {
     return `<div class="metric"><small>${esc(label)}</small><strong>${esc(value)} <small>${esc(unit)}</small></strong><span>One step at a time.</span></div>`;
   }
-  function programmeRows(progArg = null, check = false) {
+  function programmeRows(progArg = null, check = false, slot = null) {
     const p = progArg || plan();
-    const sess = currentSession(p);
+    const sess = slot ? slot.sess : currentSession(p);
     const exerciseList = sess ? sess.exercises : (p ? p.exercises : []);
     const thumb = (e) => {
       const m = String(e.videoUrl || "").match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
@@ -148,7 +210,7 @@ export function startMemberApp(session) {
         ? `<button class="workout-thumb-btn" data-member-action="exercise" data-id="${e.id}" aria-label="Watch ${esc(e.name)} demonstration"><img src="https://i.ytimg.com/vi/${m[1]}/mqdefault.jpg" alt="" loading="lazy">${icon("play")}</button>`
         : "";
     };
-    const todayLog = p ? data.logs.find((l) => l.date === TODAY && l.programme === p.id) : null;
+    const todayLog = slot ? slot.log : p ? data.logs.find((l) => l.date === TODAY && l.programme === p.id) : null;
     const doneToday = new Map((todayLog?.entries || []).map((en) => [en.exercise, en]));
     const prev = check ? lastSession(p?.id) : null;
     const prevEntries = new Map((prev?.entries || []).map((en) => [en.exercise, en]));
@@ -161,6 +223,24 @@ export function startMemberApp(session) {
       })
       .join("");
   }
+  // The week at a glance: Mon/Wed/Fri chips with done / today / catch-up /
+  // upcoming states. Tap an open day to log that session; missed days stay
+  // loggable all week; upcoming days unlock on the day.
+  function weekStripPanel(p) {
+    const plan7 = p ? weekPlan(p) : [];
+    if (!plan7.length) return "";
+    const shortName = (s) => esc(String(s?.name || "Session").split("—")[0].trim());
+    const dayShort = (d) =>
+      new Intl.DateTimeFormat("en-GB", { weekday: "short", timeZone: "Europe/London" }).format(new Date(d + "T12:00:00"));
+    const stateLabel = { done: "Done", started: "In progress", today: "Today", missed: "Catch up", future: "Upcoming" };
+    const chip = (s) => {
+      const open = s.state !== "future";
+      const tag = open ? "button" : "div";
+      const act = open ? ` type="button" data-member-action="start-workout" data-programme="${esc(p.id)}" data-slot="${s.k}"` : "";
+      return `<${tag} class="week-chip ${s.state}"${act}><small>${dayShort(s.date)} ${dateLabel(s.date)}</small><strong>${shortName(s.sess)}</strong><span>${s.state === "done" ? icon("checkCircle") : ""}${stateLabel[s.state]}</span></${tag}>`;
+    };
+    return `<section class="panel week-strip-panel" style="margin-top:22px"><div class="panel-head"><h2>This week's sessions</h2><span class="week-strip-count">WEEK ${weekNum(p)} OF ${p.weeks}</span></div><div class="week-strip">${plan7.map(chip).join("")}</div><div class="panel-footer"><span>Missed a day? It stays open to catch up all week — a fresh week starts Monday.</span></div></section>`;
+  }
   function todayPage() {
     const next = data.sessions
       .filter((s) => s.date >= TODAY && s.status !== "Completed")
@@ -168,11 +248,14 @@ export function startMemberApp(session) {
     const p0 = plan();
     const wk = p0 ? weekNum(p0) : null;
     const prevS = p0 ? lastSession(p0.id) : null;
-    const nextSess = p0 ? currentSession(p0) : null;
+    const active = p0 ? activeSlot(p0) : null;
+    const nextLabel = active?.sess
+      ? ` · ${active.state === "missed" ? "Catch up" : active.date === TODAY ? "Today" : dateLabel(active.date)}: ${active.sess.name}`
+      : "";
     const heroSub = p0
-      ? `Week ${wk} of ${p0.weeks} · ${programmeSessions(p0.id)} sessions logged${prevS ? " · Last: " + dateLabel(prevS.date) : ""}${nextSess ? " · Next: " + nextSess.name : ""}`
+      ? `Week ${wk} of ${p0.weeks} · ${programmeSessions(p0.id)} sessions logged${prevS ? " · Last: " + dateLabel(prevS.date) : ""}${nextLabel}`
       : "Your coach will assign your programme here. For now, make yourself at home.";
-    return `${title("Good to see you, " + member().name.split(" ")[0] + ".", "A little consistency. A little support. Your next step is here.", btn("Check in with coach", "checkin", "message", "accent"))}<div class="metrics-grid section-gap">${metric("This week", count(), "sessions")}${metric("Training streak", member().streak, "weeks")}${metric("Club points", xpWeek(), "XP")}</div><div class="hero member-hero"><div><div class="eyebrow">${p0 ? "YOUR TRAINING PLAN" : "A PLACE TO START"}</div><h2>${esc(p0?.name || "Welcome to your club.")}</h2><p>${esc(heroSub)}</p><div class="hero-actions">${p0 ? btn(startLabel(true), "start-workout", "arrow", "white", `data-programme="${p0.id}"`) : btn("Send a check-in", "checkin", "arrow", "white")}</div></div><img src="assets/logo-mark-white.png" class="member-hero-mark" alt=""></div><div class="two-col section-gap" style="margin-top:22px"><section class="panel"><div class="panel-head"><h2>Your next session</h2>${icon("calendar")}</div>${next ? `<div class="session-row"><span class="session-time">${esc(next.time)}</span><i class="session-bar"></i><div class="session-info"><strong>${esc(next.name)}</strong><small>${dateLabel(next.date)} · ${next.duration} min · Coach ${esc(next.coach)}</small></div></div>` : '<div class="panel-pad muted">No sessions booked yet. Your coach will add them here.</div>'}<div class="panel-footer"><span>Keep a little space in your week for yourself.</span></div></section><section class="panel"><div class="panel-head"><h2>This week's tests</h2>${icon("target")}</div>${weeklyTests(TODAY)
+    return `${title("Good to see you, " + member().name.split(" ")[0] + ".", "A little consistency. A little support. Your next step is here.", btn("Check in with coach", "checkin", "message", "accent"))}<div class="metrics-grid section-gap">${metric("This week", count(), "sessions")}${metric("Training streak", member().streak, "weeks")}${metric("Club points", xpWeek(), "XP")}</div><div class="hero member-hero"><div><div class="eyebrow">${p0 ? "YOUR TRAINING PLAN" : "A PLACE TO START"}</div><h2>${esc(p0?.name || "Welcome to your club.")}</h2><p>${esc(heroSub)}</p><div class="hero-actions">${p0 ? btn(startLabel(true), "start-workout", "arrow", "white", `data-programme="${p0.id}"`) : btn("Send a check-in", "checkin", "arrow", "white")}</div></div><img src="assets/logo-mark-white.png" class="member-hero-mark" alt=""></div>${weekStripPanel(p0)}<div class="two-col section-gap" style="margin-top:22px"><section class="panel"><div class="panel-head"><h2>Your next session</h2>${icon("calendar")}</div>${next ? `<div class="session-row"><span class="session-time">${esc(next.time)}</span><i class="session-bar"></i><div class="session-info"><strong>${esc(next.name)}</strong><small>${dateLabel(next.date)} · ${next.duration} min · Coach ${esc(next.coach)}</small></div></div>` : '<div class="panel-pad muted">No sessions booked yet. Your coach will add them here.</div>'}<div class="panel-footer"><span>Keep a little space in your week for yourself.</span></div></section><section class="panel"><div class="panel-head"><h2>This week's tests</h2>${icon("target")}</div>${weeklyTests(TODAY)
       .map((t) => {
         const mine = data.measures
           .filter((m) => m.kind === t.kind && m.date >= mondayOf(TODAY) && m.date <= TODAY)
@@ -455,15 +538,22 @@ export function startMemberApp(session) {
       const pid = el?.dataset?.programme || plan()?.id;
       const p = pid ? plan(pid) : plan();
       if (!p) return;
-      const ws = currentSession(p);
-      const todayLog = data.logs.find((l) => l.date === TODAY && l.programme === p.id);
-      const doneN = todayLog?.completedCount ?? (todayLog?.entries?.length || 0);
+      // A specific day chip carries its slot; the main button opens the active one.
+      const plan7 = weekPlan(p);
+      const slot =
+        (el?.dataset?.slot !== undefined && el?.dataset?.slot !== "" && plan7.find((s) => s.k === Number(el.dataset.slot))) ||
+        activeSlot(p) ||
+        null;
+      const ws = slot ? slot.sess : currentSession(p);
+      const slotLog0 = slot ? slot.log : data.logs.find((l) => l.date === TODAY && l.programme === p.id);
+      const doneN = slotLog0?.completedCount ?? (slotLog0?.entries?.length || 0);
       const totalN = (ws ? ws.exercises : p.exercises)?.length || 0;
-      const sub = `${p.name}${ws ? " · " + ws.name : ""}${doneN ? ` · ${doneN} of ${totalN} done today` : ""}`;
+      const catchUp = slot && slot.state === "missed";
+      const sub = `${p.name}${ws ? " · " + ws.name : ""}${doneN ? ` · ${doneN} of ${totalN} done` : ""}`;
       modal(
-        "Today’s session.",
+        catchUp ? `Catch up — ${dateLabel(slot.date)}’s session.` : "Today’s session.",
         sub,
-        `<form id="member-workout" data-programme="${esc(p.id)}"><p class="field-help">Enter your load and reps, or tap a movement, to mark it done — then press Save. Your session stays here all day; come back any time to add the rest. A fresh session arrives tomorrow.</p>${programmeRows(p, true)}${footer("Save today’s progress")}</form>`,
+        `<form id="member-workout" data-programme="${esc(p.id)}"${slot ? ` data-slot="${slot.k}"` : ""}><p class="field-help">Enter your load and reps, or tap a movement, to mark it done — then press Save. Your session stays here all day; come back any time to add the rest. The next session unlocks on its day.</p>${programmeRows(p, true, slot)}${footer("Save today’s progress")}</form>`,
       );
     },
     exercise: (el) => {
@@ -600,23 +690,37 @@ export function startMemberApp(session) {
           }
           throw Error("Tap each exercise you did to mark it done, then press Complete session.");
         }
-        // Members may be shown a rotating session (currentSession) whose exercises
-        // differ from the programme's flat list — build entries from the ticked
-        // ids themselves, and report the session's true size for XP accounting.
-        const sess = currentSession(p);
+        // Members log the scheduled session for a timeline slot (today's, or a
+        // missed one they're catching up). Build entries from the ticked ids
+        // themselves, and report the session's true size for XP accounting.
+        const slotK = form.dataset.slot !== undefined && form.dataset.slot !== "" ? Number(form.dataset.slot) : undefined;
+        const slot = slotK !== undefined ? weekPlan(p).find((s) => s.k === slotK) : null;
+        const sess = slot ? slot.sess : currentSession(p);
         const total = (sess ? sess.exercises : p?.exercises || []).length;
         await update("workout", {
           programmeId,
+          ...(slotK !== undefined ? { session: slotK } : {}),
           completed,
           total,
-          entries: completed.map((id) => ({
-            exercise: id,
-            weight: Number(f.get("weight-" + id)),
-            reps: Number(f.get("reps-" + id)),
-          })),
+          entries: completed.map((id) => {
+            // A cleared or part-filled field must never torpedo the whole save:
+            // blank/invalid numbers fall back to values the server accepts.
+            const wgt = Number(f.get("weight-" + id));
+            const rep = Number(f.get("reps-" + id));
+            return {
+              exercise: id,
+              weight: Number.isFinite(wgt) && wgt >= 0 ? Math.min(1000, wgt) : 0,
+              reps: Number.isFinite(rep) && rep >= 1 ? Math.min(1000, rep) : 1,
+            };
+          }),
         });
         close();
-        const merged = data.logs.find((l) => l.date === TODAY && l.programme === programmeId);
+        const merged = data.logs.find(
+          (l) =>
+            l.date === TODAY &&
+            l.programme === programmeId &&
+            (slotK !== undefined ? l.session === slotK : l.session === undefined),
+        );
         const doneCount = merged?.completedCount ?? completed.length;
         const totalCount = merged?.exerciseCount ?? (total || 1);
         toast(

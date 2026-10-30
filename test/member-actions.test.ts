@@ -130,6 +130,46 @@ describe("member actions — rotating session logging", () => {
   });
 });
 
+describe("weekly timeline slots", () => {
+  const body = (key: string, session: number | undefined, exercise = "e1") => ({
+    key,
+    action: "workout",
+    ...(session !== undefined ? { session } : {}),
+    completed: [exercise],
+    entries: [{ exercise, weight: 60, reps: 5 }],
+  });
+
+  it("stores the session slot on the log", async () => {
+    const m = await member();
+    const r = await req("/api/member/actions", "POST", body("t1", 2), m);
+    expect(r.status).toBe(200);
+    expect(r.json.workspace.logs[0].session).toBe(2);
+  });
+
+  it("same slot same day merges; a different slot is a separate catch-up session", async () => {
+    const m = await member();
+    expect((await req("/api/member/actions", "POST", body("t1", 0), m)).status).toBe(200);
+    const sameSlot = await req("/api/member/actions", "POST", body("t2", 0), m);
+    expect(sameSlot.json.workspace.logs.length).toBe(1); // merged
+    const otherSlot = await req("/api/member/actions", "POST", body("t3", 1), m);
+    expect(otherSlot.json.workspace.logs.length).toBe(2); // catch-up stays separate
+  });
+
+  it("legacy logging without a slot keeps the old date-only merge", async () => {
+    const m = await member();
+    expect((await req("/api/member/actions", "POST", body("t1", undefined), m)).status).toBe(200);
+    const second = await req("/api/member/actions", "POST", body("t2", undefined), m);
+    expect(second.json.workspace.logs.length).toBe(1);
+  });
+
+  it("rejects fractional or out-of-range slots", async () => {
+    const m = await member();
+    expect((await req("/api/member/actions", "POST", body("t1", 1.5), m)).status).toBe(400);
+    expect((await req("/api/member/actions", "POST", body("t2", 100), m)).status).toBe(400);
+    expect((await req("/api/member/actions", "POST", body("t3", -1), m)).status).toBe(400);
+  });
+});
+
 describe("member actions — workout validation", () => {
   it("rejects entries for an exercise not marked complete and bad loads", async () => {
     const m = await member();
