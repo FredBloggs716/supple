@@ -7,6 +7,10 @@ export interface Env {
   STC_PUBLIC_ORIGIN: string;
   STC_SETUP_TOKEN: string;
   AI: Ai;
+  // Weekly digest emails (optional — digest is a no-op until the key is set
+  // via `wrangler secret put RESEND_API_KEY`).
+  RESEND_API_KEY?: string;
+  DIGEST_FROM?: string;
 }
 
 // The canonical origin: the configured public origin, else the request's own.

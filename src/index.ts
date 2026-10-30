@@ -19,6 +19,9 @@ import { leaderboard } from "./leaderboard";
 import { uploadVideo, serveVideo } from "./video";
 import { clientAccess } from "./clients";
 import { chat } from "./chat";
+import { runWeeklyDigest, renderMemberEmail, renderCoachEmail, memberStats } from "./digest";
+import { getWorkspace } from "./db";
+import { analytics } from "./analytics";
 
 export type { Env };
 
@@ -51,6 +54,14 @@ export default {
         origin,
       );
     }
+  },
+
+  // Sunday-evening weekly digest (wrangler.toml [triggers]); no-op without
+  // RESEND_API_KEY so the cron is safe to ship ahead of the email setup.
+  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(
+      runWeeklyDigest(env).then((r) => console.log("DIGEST", JSON.stringify(r))),
+    );
   },
 };
 
@@ -115,6 +126,29 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
   if (path === "/api/chat" && m === "POST") {
     const chatUser = await authenticate(req, env);
     return chat(req, env, chatUser);
+  }
+
+  // Weekly digest tools (coach only). Preview renders the email in the browser;
+  // send-test fires the real weekly run immediately so it can be checked end to end.
+  if (path === "/api/digest/preview" && m === "GET") {
+    await authenticate(req, env, { coach: true });
+    const { w } = await getWorkspace(env.DB);
+    analytics(w);
+    const who = url.searchParams.get("client");
+    const html =
+      who === "coach"
+        ? renderCoachEmail(w)
+        : (() => {
+            const c = w.clients.find((x: any) => x.id === who) || w.clients[0];
+            if (!c) throw new APIError("No clients yet.", 404);
+            return renderMemberEmail(memberStats(w, c));
+          })();
+    return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+  }
+  if (path === "/api/digest/send-test" && m === "POST") {
+    await authenticate(req, env, { coach: true, write: true });
+    const result = await runWeeklyDigest(env);
+    return json(result, 200, {}, origin);
   }
 
   throw new APIError("Not found.", 404);

@@ -1,0 +1,346 @@
+// Weekly progress emails: a week-in-review for every member and a club digest
+// for the coach, sent by the Sunday-evening cron trigger via Resend.
+// Everything is computed from the workspace, matching the app's own numbers
+// (leaderboard XP maths, analytics streak/adherence, member timeline weeks).
+// Feature-flagged: without RESEND_API_KEY the run is a silent no-op.
+import { Env } from "./env";
+import { getWorkspace } from "./db";
+import { analytics } from "./analytics";
+import { today } from "./time";
+import { testByKind } from "./tests";
+
+// ---- date helpers (UTC maths over YYYY-MM-DD keys, like analytics.ts) -------
+function parse(s: string): Date {
+  return new Date(s + "T00:00:00Z");
+}
+function addDays(s: string, n: number): string {
+  return new Date(parse(s).getTime() + n * 86400000).toISOString().slice(0, 10);
+}
+function mondayOf(s: string): string {
+  return addDays(s, -((parse(s).getUTCDay() + 6) % 7));
+}
+function dayLabel(s: string, opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }): string {
+  return new Intl.DateTimeFormat("en-GB", { ...opts, timeZone: "UTC" }).format(parse(s));
+}
+
+export const xpFor = (l: any): number =>
+  Math.round(50 * (l.exerciseCount ? (l.completedCount ?? l.exerciseCount) / l.exerciseCount : 1));
+
+function fmtValue(kind: string, value: number): string {
+  const def = testByKind(kind);
+  if (def?.unit === "s" && value >= 90) {
+    const m = Math.floor(value / 60);
+    const s = Math.round(value % 60);
+    return `${m}:${String(s).padStart(2, "0")}`;
+  }
+  return `${value}${def ? " " + def.unit : ""}`;
+}
+
+// ---- stats ------------------------------------------------------------------
+export function memberStats(w: any, c: any): any {
+  const now = today();
+  const monday = mondayOf(now);
+  const logs = w.logs.filter((l: any) => l.client === c.id);
+  const weekLogs = logs.filter((l: any) => l.date >= monday && l.date <= now);
+
+  // One cell per weekday: trained or not (any log dated that day, or a slotted
+  // log covering that slot this week).
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const date = addDays(monday, i);
+    return {
+      date,
+      label: dayLabel(date, { weekday: "short" }),
+      trained: weekLogs.some((l: any) => l.date === date),
+      future: date > now,
+    };
+  });
+
+  // XP by week, oldest first, for the 4-week trend.
+  const trend = [3, 2, 1, 0].map((k) => {
+    const start = addDays(monday, -7 * k);
+    const end = addDays(start, 6);
+    const wl = logs.filter((l: any) => l.date >= start && l.date <= end);
+    return { start, label: k === 0 ? "This week" : "w/c " + dayLabel(start), xp: wl.reduce((s: number, l: any) => s + xpFor(l), 0), sessions: wl.length };
+  });
+
+  // Programme position (mirrors the member timeline: anchored to the Monday of
+  // the first log, running for the programme's weeks).
+  const p = w.programmes.find((x: any) => x.id === (c.programmes || [])[0]) || null;
+  let programme: any = null;
+  if (p) {
+    const first = logs.filter((l: any) => l.programme === p.id).reduce((a: string | null, l: any) => (!a || l.date < a ? l.date : a), null);
+    const week = first ? Math.min(p.weeks, Math.max(1, Math.floor((parse(monday).getTime() - parse(mondayOf(first)).getTime()) / (7 * 86400000)) + 1)) : 0;
+    programme = { name: p.name, week, weeks: p.weeks, frequency: p.frequency, pct: Math.min(100, Math.round((week / p.weeks) * 100)) };
+  }
+
+  // Strongest work this week: heaviest entry per exercise, top three by load.
+  const exName = new Map(w.exercises.map((e: any) => [e.id, e.name]));
+  const best = new Map<string, any>();
+  for (const l of weekLogs) {
+    for (const en of l.entries || []) {
+      const prev = best.get(en.exercise);
+      if (!prev || en.weight > prev.weight || (en.weight === prev.weight && en.reps > prev.reps)) best.set(en.exercise, en);
+    }
+  }
+  const lifts = [...best.values()]
+    .filter((en) => en.weight > 0)
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, 3)
+    .map((en) => ({ name: exName.get(en.exercise) || "Exercise", weight: en.weight, reps: en.reps }));
+
+  // Club tests logged this week, with an honest delta against the previous
+  // result of the same kind (direction-aware: lower is better for timed tests).
+  const tests = w.measures
+    .filter((m: any) => m.client === c.id && m.date >= monday && m.date <= now && m.kind !== "Body weight")
+    .map((m: any) => {
+      const prev = w.measures
+        .filter((x: any) => x.client === c.id && x.kind === m.kind && x.date < monday)
+        .sort((a: any, b: any) => a.date.localeCompare(b.date))
+        .at(-1);
+      const def = testByKind(m.kind);
+      let delta: { text: string; good: boolean } | null = null;
+      if (prev && prev.value !== m.value) {
+        const diff = m.value - prev.value;
+        const good = def?.dir === "lower" ? diff < 0 : diff > 0;
+        delta = { text: `${diff > 0 ? "+" : "−"}${fmtValue(m.kind, Math.abs(diff))} vs last time`, good };
+      }
+      return { kind: m.kind, shown: fmtValue(m.kind, m.value), delta };
+    });
+
+  // Standing among the whole club this week (the member's own email may say
+  // their true rank — it reveals nothing about any named individual).
+  const totals = w.clients
+    .map((x: any) => ({
+      id: x.id,
+      xp: w.logs.filter((l: any) => l.client === x.id && l.date >= monday && l.date <= now).reduce((s: number, l: any) => s + xpFor(l), 0),
+    }))
+    .sort((a: any, b: any) => b.xp - a.xp);
+  const rank = totals.findIndex((t: any) => t.id === c.id) + 1;
+
+  return {
+    name: c.name.split(/\s+/)[0],
+    fullName: c.name,
+    email: c.email,
+    range: `${dayLabel(monday)} – ${dayLabel(addDays(monday, 6))}`,
+    sessions: weekLogs.length,
+    goal: p?.frequency || 3,
+    xp: weekLogs.reduce((s: number, l: any) => s + xpFor(l), 0),
+    streak: c.streak || 0,
+    adherence: c.adherence || 0,
+    days,
+    trend,
+    programme,
+    lifts,
+    tests,
+    rank,
+    of: totals.length,
+  };
+}
+
+// ---- email markup (tables + inline styles: survives Gmail/Outlook/Apple) ----
+const NAVY = "#002C8C", RED = "#D20020", INK = "#0b1433", MUTED = "#798092",
+  BODY = "#4b5366", LINE = "#e6e9f0", BG = "#f6f8fc", GREEN = "#148a4f", PALE = "#e6ecf8";
+const FONT = "font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;";
+
+const esc = (v: any): string =>
+  String(v ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] as string);
+
+function shell(preheader: string, heading: string, sub: string, body: string): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:${BG};${FONT}">
+<span style="display:none;max-height:0;overflow:hidden">${esc(preheader)}</span>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BG}"><tr><td align="center" style="padding:28px 12px">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+<tr><td style="background:${NAVY};border-radius:14px 14px 0 0;padding:34px 36px 30px">
+  <div style="${FONT}font-size:10px;letter-spacing:3px;color:#9fb4e8;font-weight:700">SOCIAL TRAINING CLUB</div>
+  <div style="${FONT}font-size:27px;line-height:1.25;color:#ffffff;font-weight:800;margin-top:10px">${heading}</div>
+  <div style="${FONT}font-size:13px;color:#b9c8ef;margin-top:8px">${esc(sub)}</div>
+  <div style="height:3px;width:52px;background:${RED};margin-top:18px"></div>
+</td></tr>
+${body}
+<tr><td style="background:#ffffff;border:1px solid ${LINE};border-top:0;border-radius:0 0 14px 14px;padding:22px 36px;text-align:center">
+  <div style="${FONT}font-size:11px;color:${MUTED};line-height:1.8">Good people. Better together.<br>
+  Social Training Club · <a href="https://socialtrainingclub.uk" style="color:${NAVY}">socialtrainingclub.uk</a><br>
+  You receive this as a club member. Reply to this email to talk to your coach, or ask to stop the weekly recap.</div>
+</td></tr>
+</table></td></tr></table></body></html>`;
+}
+
+function section(inner: string, pad = "26px 36px"): string {
+  return `<tr><td style="background:#ffffff;border-left:1px solid ${LINE};border-right:1px solid ${LINE};padding:${pad}">${inner}</td></tr>`;
+}
+function label(text: string): string {
+  return `<div style="${FONT}font-size:10px;letter-spacing:2px;color:${MUTED};font-weight:700;margin-bottom:12px">${esc(text)}</div>`;
+}
+function statCells(stats: Array<[string | number, string, string?]>): string {
+  const cell = ([big, small, colour]: [string | number, string, string?]) =>
+    `<td align="center" style="background:${BG};border:1px solid ${LINE};border-radius:10px;padding:16px 6px">
+      <div style="${FONT}font-size:26px;font-weight:800;color:${colour || INK}">${esc(big)}</div>
+      <div style="${FONT}font-size:10px;letter-spacing:1px;color:${MUTED};font-weight:700;margin-top:4px">${esc(small)}</div></td>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${stats
+    .map(cell)
+    .join('<td style="width:10px"></td>')}</tr></table>`;
+}
+function barRow(name: string, pct: number, right: string, colour = NAVY): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px">
+  <tr><td style="${FONT}font-size:12px;color:${BODY};padding-bottom:5px">${esc(name)}</td>
+  <td align="right" style="${FONT}font-size:12px;font-weight:700;color:${INK};padding-bottom:5px">${esc(right)}</td></tr>
+  <tr><td colspan="2"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td style="background:${PALE};border-radius:6px;height:10px;font-size:0;line-height:0" width="100%">
+      <div style="background:${colour};border-radius:6px;height:10px;width:${Math.max(2, Math.min(100, pct))}%">&nbsp;</div>
+    </td></tr></table></td></tr></table>`;
+}
+
+export function renderMemberEmail(s: any): string {
+  const dayDots = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${s.days
+    .map((d: any) => {
+      const bgc = d.trained ? NAVY : d.future ? "#ffffff" : BG;
+      const col = d.trained ? "#ffffff" : MUTED;
+      const brd = d.trained ? NAVY : LINE;
+      return `<td align="center" style="padding:0 2px"><div style="background:${bgc};border:1px solid ${brd};border-radius:9px;padding:10px 0">
+        <div style="${FONT}font-size:10px;font-weight:700;color:${col}">${esc(d.label)}</div>
+        <div style="${FONT}font-size:13px;margin-top:3px;color:${col}">${d.trained ? "✓" : "·"}</div></div></td>`;
+    })
+    .join("")}</tr></table>`;
+
+  const maxXp = Math.max(50, ...s.trend.map((t: any) => t.xp));
+  const trendBars = s.trend
+    .map((t: any) => barRow(t.label, (t.xp / maxXp) * 100, `${t.xp} pts · ${t.sessions} session${t.sessions === 1 ? "" : "s"}`, t.label === "This week" ? RED : NAVY))
+    .join("");
+
+  const liftRows = s.lifts
+    .map(
+      (l: any, i: number) => `<tr><td style="${FONT}font-size:13px;color:${BODY};padding:9px 0;border-bottom:1px solid ${LINE}">
+      <span style="display:inline-block;width:22px;height:22px;background:${i === 0 ? RED : PALE};color:${i === 0 ? "#fff" : NAVY};border-radius:50%;text-align:center;line-height:22px;font-size:11px;font-weight:800;margin-right:9px">${i + 1}</span>${esc(l.name)}</td>
+      <td align="right" style="${FONT}font-size:13px;font-weight:800;color:${INK};border-bottom:1px solid ${LINE}">${esc(l.weight)} kg × ${esc(l.reps)}</td></tr>`,
+    )
+    .join("");
+
+  const testRows = s.tests
+    .map(
+      (t: any) => `<tr><td style="${FONT}font-size:13px;color:${BODY};padding:9px 0;border-bottom:1px solid ${LINE}">${esc(t.kind)}</td>
+      <td align="right" style="${FONT}font-size:13px;border-bottom:1px solid ${LINE}"><strong style="color:${INK}">${esc(t.shown)}</strong>
+      ${t.delta ? `<span style="color:${t.delta.good ? GREEN : RED};font-size:11px;font-weight:700"> ${t.delta.good ? "▲" : "▼"} ${esc(t.delta.text)}</span>` : ""}</td></tr>`,
+    )
+    .join("");
+
+  const body =
+    section(label("YOUR WEEK IN NUMBERS") + statCells([
+      [`${s.sessions}/${s.goal}`, "SESSIONS", s.sessions >= s.goal ? GREEN : INK],
+      [`${s.xp}`, "CLUB POINTS", RED],
+      [`${s.streak}w`, "STREAK"],
+    ])) +
+    section(label("YOUR TRAINING WEEK") + dayDots) +
+    (s.programme
+      ? section(
+          label("YOUR PROGRAMME") +
+            barRow(s.programme.name, s.programme.pct, s.programme.week ? `Week ${s.programme.week} of ${s.programme.weeks}` : "Starts with your first session", RED),
+        )
+      : "") +
+    section(label("LAST FOUR WEEKS") + trendBars) +
+    (s.lifts.length ? section(label("STRONGEST WORK THIS WEEK") + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${liftRows}</table>`) : "") +
+    (s.tests.length ? section(label("CLUB TESTS THIS WEEK") + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${testRows}</table>`) : "") +
+    section(
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td style="background:${NAVY};border-radius:12px;padding:22px 26px">
+        <div style="${FONT}font-size:13px;color:#b9c8ef">This week you're</div>
+        <div style="${FONT}font-size:24px;font-weight:800;color:#ffffff;margin-top:3px">#${s.rank} of ${s.of} in the club</div>
+      </td><td style="width:12px"></td>
+      <td align="center" style="background:${RED};border-radius:12px;padding:22px 10px" width="38%">
+        <a href="https://socialtrainingclub.uk" style="${FONT}font-size:13px;font-weight:800;color:#ffffff;text-decoration:none">Open your<br>workspace →</a>
+      </td></tr></table>`,
+      "26px 36px 30px",
+    );
+
+  return shell(
+    `${s.sessions} sessions, ${s.xp} club points this week`,
+    `Your week at the club,<br>${esc(s.name)}.`,
+    `Week in review · ${s.range}`,
+    body,
+  );
+}
+
+export function renderCoachEmail(w: any): string {
+  const now = today();
+  const monday = mondayOf(now);
+  const perClient = w.clients.map((c: any) => memberStats(w, c));
+  const sessions = perClient.reduce((s: number, c: any) => s + c.sessions, 0);
+  const goal = perClient.reduce((s: number, c: any) => s + c.goal, 0);
+  const quiet = perClient.filter((c: any) => !c.sessions);
+  const ending = perClient.filter((c: any) => c.programme && c.programme.week >= c.programme.weeks);
+  const checkins = w.clients.filter((c: any) => c.checkin).length;
+
+  const rows = perClient
+    .sort((a: any, b: any) => b.xp - a.xp)
+    .map(
+      (c: any) => `<tr>
+      <td style="${FONT}font-size:13px;color:${INK};font-weight:700;padding:9px 0;border-bottom:1px solid ${LINE}">${esc(c.fullName)}${c.programme && c.programme.week >= c.programme.weeks ? ` <span style="color:${RED};font-size:10px;font-weight:800">FINAL WEEK</span>` : ""}</td>
+      <td align="center" style="${FONT}font-size:13px;color:${c.sessions >= c.goal ? GREEN : c.sessions ? BODY : RED};font-weight:700;border-bottom:1px solid ${LINE}">${c.sessions}/${c.goal}</td>
+      <td align="center" style="${FONT}font-size:13px;color:${BODY};border-bottom:1px solid ${LINE}">${c.xp}</td>
+      <td align="center" style="${FONT}font-size:13px;color:${BODY};border-bottom:1px solid ${LINE}">${c.streak}w</td></tr>`,
+    )
+    .join("");
+
+  const body =
+    section(label("THE CLUB THIS WEEK") + statCells([
+      [`${sessions}/${goal}`, "SESSIONS LOGGED", sessions >= goal ? GREEN : INK],
+      [`${quiet.length}`, "WENT QUIET", quiet.length ? RED : GREEN],
+      [`${checkins}`, "CHECK-INS WAITING", checkins ? RED : INK],
+    ])) +
+    section(
+      label("EVERY MEMBER, AT A GLANCE") +
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr><td style="${FONT}font-size:10px;letter-spacing:1px;color:${MUTED};font-weight:700;padding-bottom:6px">MEMBER</td>
+        <td align="center" style="${FONT}font-size:10px;letter-spacing:1px;color:${MUTED};font-weight:700">SESSIONS</td>
+        <td align="center" style="${FONT}font-size:10px;letter-spacing:1px;color:${MUTED};font-weight:700">POINTS</td>
+        <td align="center" style="${FONT}font-size:10px;letter-spacing:1px;color:${MUTED};font-weight:700">STREAK</td></tr>${rows}</table>`,
+    ) +
+    (quiet.length
+      ? section(label("WORTH A NUDGE") + `<div style="${FONT}font-size:13px;color:${BODY};line-height:2">${quiet.map((c: any) => esc(c.fullName)).join(" · ")} didn't log a session this week.</div>`)
+      : "") +
+    (ending.length
+      ? section(label("PROGRAMMES ENDING") + `<div style="${FONT}font-size:13px;color:${BODY};line-height:2">${ending.map((c: any) => `${esc(c.fullName)} — ${esc(c.programme.name)}`).join("<br>")}</div>`)
+      : "") +
+    section(
+      `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="background:${RED};border-radius:12px;padding:18px">
+      <a href="https://socialtrainingclub.uk" style="${FONT}font-size:14px;font-weight:800;color:#ffffff;text-decoration:none">Open the coach workspace →</a></td></tr></table>`,
+      "26px 36px 30px",
+    );
+
+  return shell(
+    `${sessions} sessions across the club · ${quiet.length} quiet`,
+    "Your club this week.",
+    `Coach digest · ${dayLabel(monday)} – ${dayLabel(addDays(monday, 6))}`,
+    body,
+  );
+}
+
+// ---- sending ----------------------------------------------------------------
+export async function sendEmail(env: Env, to: string, subject: string, html: string): Promise<boolean> {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: env.DIGEST_FROM || "Social Training Club <club@socialtrainingclub.uk>",
+      to: [to],
+      subject,
+      html,
+    }),
+  });
+  if (!res.ok) console.error("DIGEST send failed", to, res.status, await res.text());
+  return res.ok;
+}
+
+export async function runWeeklyDigest(env: Env): Promise<{ sent: number; skipped?: string }> {
+  if (!env.RESEND_API_KEY) return { sent: 0, skipped: "RESEND_API_KEY not configured" };
+  const { w } = await getWorkspace(env.DB);
+  analytics(w); // streak + adherence, same numbers the app shows
+  let sent = 0;
+  for (const c of w.clients) {
+    if (c.digestOptOut) continue;
+    const s = memberStats(w, c);
+    if (await sendEmail(env, c.email, `Your week at the club — ${s.sessions} session${s.sessions === 1 ? "" : "s"}, ${s.xp} points`, renderMemberEmail(s))) sent++;
+  }
+  if (await sendEmail(env, w.settings.email, "Coach digest — your club this week", renderCoachEmail(w))) sent++;
+  return { sent };
+}

@@ -29,6 +29,11 @@ database_id = "18ca15a4-2d0f-48f1-936e-bf6a4410b644"
 [ai]
 binding = "AI"
 
+# Weekly progress emails: Sunday 18:00 UTC (6pm UK in winter, 7pm in summer).
+# A no-op until RESEND_API_KEY is set (`wrangler secret put RESEND_API_KEY`).
+[triggers]
+crons = ["0 18 * * SUN"]
+
 [vars]
 # Set empty for local dev. In production, leave blank to infer HTTPS from the request,
 # or set to the exact public origin e.g. "https://training.example.com".
