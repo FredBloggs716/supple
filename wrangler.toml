@@ -26,6 +26,9 @@ database_id = "18ca15a4-2d0f-48f1-936e-bf6a4410b644"
 # binding = "VIDEOS"
 # bucket_name = "supple-videos"
 
+[ai]
+binding = "AI"
+
 [vars]
 # Set empty for local dev. In production, leave blank to infer HTTPS from the request,
 # or set to the exact public origin e.g. "https://training.example.com".

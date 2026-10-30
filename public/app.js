@@ -23,6 +23,13 @@ if (session.user.role === "member") {
   let data = session.workspace;
   let revision = session.revision;
   let saving = false;
+  // Normalize old-format single programme string to programmes array
+  for (const c of data.clients) {
+    if (!Array.isArray(c.programmes)) {
+      c.programmes = c.programme ? [c.programme] : [];
+      delete c.programme;
+    }
+  }
   const navItems = [
     ["overview", "grid", "Overview"],
     ["clients", "users", "Clients"],
@@ -99,7 +106,7 @@ if (session.user.role === "member") {
   const pending = () => data.clients.filter((c) => c.checkin);
   const weeklyGoal = () =>
     data.clients.reduce(
-      (total, c) => total + (programme(c.programme)?.frequency || 3),
+      (total, c) => total + (programme((c.programmes || [])[0])?.frequency || 3),
       0,
     );
   const winner = () =>
@@ -113,6 +120,11 @@ if (session.user.role === "member") {
       .filter((m) => m.client === cid && m.kind === kind)
       .sort((a, b) => a.date.localeCompare(b.date))
       .at(-1)?.value;
+  function normalizeData(d) {
+    for (const c of d.clients) {
+      if (!Array.isArray(c.programmes)) { c.programmes = c.programme ? [c.programme] : []; delete c.programme; }
+    }
+  }
   async function persist() {
     saving = true;
     try {
@@ -121,11 +133,13 @@ if (session.user.role === "member") {
         body: { workspace: data, revision },
       });
       data = result.workspace;
+      normalizeData(data);
       revision = result.revision;
     } catch (error) {
       try {
         const result = await api("/api/workspace");
         data = result.workspace;
+        normalizeData(data);
         revision = result.revision;
       } catch {}
       throw error;
@@ -313,7 +327,7 @@ if (session.user.role === "member") {
   function clientTable(clients, compact = false) {
     if (!clients.length)
       return empty("No clients found.", "Try another name or filter.", "users");
-    return `<div class="table-wrap"><table><thead><tr><th>Client</th><th>Programme</th>${compact ? "" : "<th>Goal</th>"}<th>Adherence</th><th>Status</th><th><span class="muted">View</span></th></tr></thead><tbody>${clients.map((c) => `<tr><td><button class="client-cell client-name" data-action="client" data-id="${c.id}">${avatar(c)}<span><strong>${esc(c.name)}</strong><small>${c.streak} week streak</small></span></button></td><td>${esc(programme(c.programme)?.name || "Not assigned")}</td>${compact ? "" : `<td>${esc(c.goal)}</td>`}<td><div class="table-progress"><div class="progress-track"><i style="width:${Math.min(100, c.adherence)}%"></i></div><span>${c.adherence}%</span></div></td><td>${pill(c.status, c.status === "On track" ? "success" : "warning", true)}</td><td><button class="icon-btn table-action" data-action="client" data-id="${c.id}" aria-label="View ${esc(c.name)}">${icon("chevron")}</button></td></tr>`).join("")}</tbody></table></div>`;
+    return `<div class="table-wrap"><table><thead><tr><th>Client</th><th>Programme</th>${compact ? "" : "<th>Goal</th>"}<th>Adherence</th><th>Status</th><th><span class="muted">View</span></th></tr></thead><tbody>${clients.map((c) => { const progs = (c.programmes || []).map(pid => programme(pid)?.name).filter(Boolean); const progDisplay = progs.length === 0 ? "Not assigned" : progs.length === 1 ? progs[0] : `${progs[0]} +${progs.length - 1}`; return `<tr><td><button class="client-cell client-name" data-action="client" data-id="${c.id}">${avatar(c)}<span><strong>${esc(c.name)}</strong><small>${c.streak} week streak</small></span></button></td><td>${esc(progDisplay)}</td>${compact ? "" : `<td>${esc(c.goal)}</td>`}<td><div class="table-progress"><div class="progress-track"><i style="width:${Math.min(100, c.adherence)}%"></i></div><span>${c.adherence}%</span></div></td><td>${pill(c.status, c.status === "On track" ? "success" : "warning", true)}</td><td><button class="icon-btn table-action" data-action="client" data-id="${c.id}" aria-label="View ${esc(c.name)}">${icon("chevron")}</button></td></tr>`; }).join("")}</tbody></table></div>`;
   }
   function filteredClients() {
     return data.clients.filter(
@@ -339,7 +353,7 @@ if (session.user.role === "member") {
     return list.length
       ? list
           .map((p, i) => {
-            const assigned = data.clients.filter((c) => c.programme === p.id);
+            const assigned = data.clients.filter((c) => (c.programmes || []).includes(p.id));
             return `<article class="panel programme-card"><div class="programme-cover ${p.colour}"><span class="eyebrow">SOCIAL TRAINING CLUB / PROGRAMMES</span><img class="cover-mark" src="assets/logo-mark${p.colour === "light" ? "" : "-white"}.png" alt=""><h3>${esc(p.name)}</h3><span class="cover-number">${String(i + 1).padStart(2, "0")}</span></div><div class="programme-body">${pill(p.goal)}<p class="programme-description">${esc(p.description)}</p><div class="programme-meta"><span>${icon("calendar")}${p.weeks} weeks</span><span>${icon("dumbbell")}${p.frequency} sessions / week</span></div><div class="programme-bottom"><div class="avatar-stack">${assigned
               .slice(0, 3)
               .map((c) => avatar(c))
@@ -422,7 +436,7 @@ if (session.user.role === "member") {
       )
       .join(
         "",
-      )}</div><p class="field-help" style="margin-bottom:18px">Set individual targets that support this client’s needs and training.</p><button class="btn primary full" type="submit">Save targets${icon("check")}</button></form></section><div class="tip" style="margin-top:20px">${icon("nutrition")}<div><strong>Consistency over perfection.</strong>One meal doesn’t define a week. Encourage habits your clients can keep coming back to.</div></div></div></div>`;
+      )}</div><p class="field-help" style="margin-bottom:18px">Set individual targets that support this client’s needs and training.</p><button class="btn primary full" type="submit">Save targets${icon("check")}</button></form></section><section class="panel"><form class="panel-pad" id="victor-notes-form"><h3 style="margin-bottom:8px">Victor’s notes</h3><p class="field-help" style="margin-bottom:14px">Context Victor uses to personalise answers for this member. Invisible to them.</p><label class="field"><span>About this member</span><textarea name="victorNotes" maxlength="1000" rows="5" placeholder="e.g. recovering from knee injury, trains 3x/week, goal is fat loss, motivated by competition...">${esc(c.victorNotes || "")}</textarea></label><button class="btn primary full" type="submit">Save notes${icon("check")}</button></form></section><div class="tip" style="margin-top:20px">${icon("nutrition")}<div><strong>Consistency over perfection.</strong>One meal doesn’t define a week. Encourage habits your clients can keep coming back to.</div></div></div></div>`;
   }
   function progressPage() {
     const c = client(ui.selectedClient) || data.clients[0];
@@ -448,10 +462,13 @@ if (session.user.role === "member") {
         .filter((m) => m.client === c.id)
         .sort((a, b) => b.date.localeCompare(a.date))
         .slice(0, 5)
-        .map(
-          (m) =>
-            `<div class="meal-row"><span class="meal-icon">${icon(m.kind === "Body weight" ? "user" : "dumbbell")}</span><div><strong>${esc(m.kind)}</strong><small>${dateLabel(m.date)}</small></div><span class="mono">${m.value} <small>${m.kind === "2 km row" ? "sec" : "kg"}</small></span></div>`,
-        )
+        .map((m) => {
+          const t = testByKind(m.kind);
+          const timed = t && t.unit === "s" && t.dir === "lower";
+          const shown = timed ? formatResult(m.kind, m.value) : m.value;
+          const unit = timed ? "" : !t ? "kg" : { reps: "reps", s: "s", kg: "kg", cm: "cm" }[t.unit];
+          return `<div class="meal-row"><span class="meal-icon">${icon(m.kind === "Body weight" ? "user" : "dumbbell")}</span><div><strong>${esc(m.kind)}</strong><small>${dateLabel(m.date)}</small></div><span class="mono">${shown}${unit ? ` <small>${unit}</small>` : ""}</span></div>`;
+        })
         .join("") ||
       empty("No results yet.", "Start with a comfortable benchmark.", "target")
     }</section></div>`;
@@ -536,7 +553,7 @@ if (session.user.role === "member") {
     openModal(
       c.name,
       "A clear picture, so you can coach the person.",
-      `<div class="profile-head">${avatar(c, true)}<div><h3>${esc(c.name)}</h3><p>${esc(c.email)}</p><div style="margin-top:9px">${pill(c.status, c.status === "On track" ? "success" : "warning", true)}</div></div></div><div class="profile-stats"><div class="profile-stat"><small>This week</small><strong>${totalAttendance(c.id)} sessions</strong></div><div class="profile-stat"><small>Adherence</small><strong>${c.adherence}%</strong></div><div class="profile-stat"><small>Streak</small><strong>${c.streak} weeks</strong></div></div><div class="info-row"><span>Training goal</span><strong>${esc(c.goal)}</strong></div><div class="info-row"><span>Member since</span><strong>${dateLabel(c.joined, { day: "numeric", month: "long", year: "numeric" })}</strong></div><form id="assign-form" data-client="${c.id}" style="margin-top:18px"><label class="field"><span>Assigned programme</span><select name="programme"><option value="">No programme</option>${data.programmes.map((p) => `<option value="${p.id}" ${c.programme === p.id ? "selected" : ""}>${esc(p.name)} · ${p.weeks} weeks</option>`).join("")}</select></label><button class="btn primary small" type="submit">Save assignment${icon("check")}</button></form><div class="heading-actions" style="margin:20px 0">${btn("Create sign-in link", "invite-client", "mail", "primary small", `data-id="${c.id}"`)}${btn("View progress", "client-progress", "chart", "small", `data-id="${c.id}"`)}${btn("Nutrition", "client-nutrition", "nutrition", "small", `data-id="${c.id}"`)}</div>${c.checkin ? `<div class="checkin-item"><div class="checkin-top"><strong>Latest check-in</strong>${pill("Needs review", "warning")}</div><blockquote>${esc(c.checkin)}</blockquote>${btn("Mark as reviewed", "review-checkin", "check", "small", `data-id="${c.id}"`)}</div>` : ""}${c.parq ? `<h3 style="margin:24px 0 10px">Health & consent</h3><div class="info-row"><span>PAR-Q (${dateLabel(c.parq.date)})</span>${pill(c.parq.flagged ? "Flagged — review before programming" : "No flags", c.parq.flagged ? "warning" : "success")}</div>${c.parq.flagged ? (c.parq.cleared ? `<div class="info-row"><span>GP clearance</span><strong>Confirmed ${dateLabel(c.parq.cleared)}</strong></div>` : `<p class="field-help" style="margin:8px 0 0">Answered YES to: ${c.parq.answers.map((a, i) => (a ? "Q" + (i + 1) : null)).filter(Boolean).join(", ")} — advise GP clearance before training.</p><div style="margin:10px 0 4px">${btn("Mark GP clearance confirmed", "parq-cleared", "check", "small", `data-id="${c.id}"`)}</div>`) : ""}${c.consent ? `<div class="info-row"><span>Risk declaration</span><strong>Accepted ${dateLabel(c.consent.acceptedAt)}</strong></div>` : ""}${c.source === "self" ? `<div class="info-row"><span>Joined via</span><strong>Self sign-up · £10/month — arrange payment</strong></div>` : ""}` : ""}${trainingHistory(c.id)}<h3 style="margin:24px 0 14px">Coach notes</h3>${c.notes.length ? c.notes.map((n) => `<div class="client-note">${esc(n.text)}<time>${dateLabel(n.date)}</time></div>`).join("") : '<p class="muted" style="font-size:11px;margin-bottom:16px">The little details that make your coaching personal.</p>'}<form id="note-form" data-client="${c.id}"><label class="field"><span>Add a private note</span><textarea name="note" maxlength="2000" placeholder="What would you like to remember for next time?" required></textarea></label><button class="btn small" type="submit">Save note${icon("plus")}</button></form><h3 style="margin:24px 0 10px">Access</h3><p class="field-help" style="margin-bottom:12px">Pause this client's sign-in, or remove them from the club entirely.</p><div class="heading-actions">${btn("Remove sign-in access", "revoke-access", "shield", "small", `data-id="${c.id}"`)}${btn("Delete client", "delete-client", "x", "small", `data-id="${c.id}"`)}</div>`,
+      `<div class="profile-head">${avatar(c, true)}<div><h3>${esc(c.name)}</h3><p>${esc(c.email)}</p><div style="margin-top:9px">${pill(c.status, c.status === "On track" ? "success" : "warning", true)}</div></div></div><div class="profile-stats"><div class="profile-stat"><small>This week</small><strong>${totalAttendance(c.id)} sessions</strong></div><div class="profile-stat"><small>Adherence</small><strong>${c.adherence}%</strong></div><div class="profile-stat"><small>Streak</small><strong>${c.streak} weeks</strong></div></div><div class="info-row"><span>Training goal</span><strong>${esc(c.goal)}</strong></div><div class="info-row"><span>Member since</span><strong>${dateLabel(c.joined, { day: "numeric", month: "long", year: "numeric" })}</strong></div><form id="assign-form" data-client="${c.id}" style="margin-top:18px"><div class="field"><span>Assigned programmes</span>${data.programmes.length ? `<div class="exercise-picker">${data.programmes.map((p) => `<label class="exercise-option"><input type="checkbox" name="programmes" value="${p.id}" ${(c.programmes || []).includes(p.id) ? "checked" : ""}><span>${esc(p.name)}<small class="muted" style="display:block;margin-top:4px">${p.weeks} weeks · ${p.frequency} sessions/week</small></span></label>`).join("")}</div>` : '<p class="muted" style="font-size:11px;margin:8px 0">Create a programme first.</p>'}</div><button class="btn primary small" type="submit">Save assignments${icon("check")}</button></form><div class="heading-actions" style="margin:20px 0">${btn("Create sign-in link", "invite-client", "mail", "primary small", `data-id="${c.id}"`)}${btn("View progress", "client-progress", "chart", "small", `data-id="${c.id}"`)}${btn("Nutrition", "client-nutrition", "nutrition", "small", `data-id="${c.id}"`)}</div>${c.checkin ? `<div class="checkin-item"><div class="checkin-top"><strong>Latest check-in</strong>${pill("Needs review", "warning")}</div><blockquote>${esc(c.checkin)}</blockquote>${btn("Mark as reviewed", "review-checkin", "check", "small", `data-id="${c.id}"`)}</div>` : ""}${c.parq ? `<h3 style="margin:24px 0 10px">Health & consent</h3><div class="info-row"><span>PAR-Q (${dateLabel(c.parq.date)})</span>${pill(c.parq.flagged ? "Flagged — review before programming" : "No flags", c.parq.flagged ? "warning" : "success")}</div>${c.parq.flagged ? (c.parq.cleared ? `<div class="info-row"><span>GP clearance</span><strong>Confirmed ${dateLabel(c.parq.cleared)}</strong></div>` : `<p class="field-help" style="margin:8px 0 0">Answered YES to: ${c.parq.answers.map((a, i) => (a ? "Q" + (i + 1) : null)).filter(Boolean).join(", ")} — advise GP clearance before training.</p><div style="margin:10px 0 4px">${btn("Mark GP clearance confirmed", "parq-cleared", "check", "small", `data-id="${c.id}"`)}</div>`) : ""}${c.consent ? `<div class="info-row"><span>Risk declaration</span><strong>Accepted ${dateLabel(c.consent.acceptedAt)}</strong></div>` : ""}${c.source === "self" ? `<div class="info-row"><span>Joined via</span><strong>Self sign-up · £10/month — arrange payment</strong></div>` : ""}` : ""}${trainingHistory(c.id)}<h3 style="margin:24px 0 14px">Coach notes</h3>${c.notes.length ? c.notes.map((n) => `<div class="client-note">${esc(n.text)}<time>${dateLabel(n.date)}</time></div>`).join("") : '<p class="muted" style="font-size:11px;margin-bottom:16px">The little details that make your coaching personal.</p>'}<form id="note-form" data-client="${c.id}"><label class="field"><span>Add a private note</span><textarea name="note" maxlength="2000" placeholder="What would you like to remember for next time?" required></textarea></label><button class="btn small" type="submit">Save note${icon("plus")}</button></form><h3 style="margin:24px 0 10px">Access</h3><p class="field-help" style="margin-bottom:12px">Pause this client's sign-in, or remove them from the club entirely.</p><div class="heading-actions">${btn("Remove sign-in access", "revoke-access", "shield", "small", `data-id="${c.id}"`)}${btn("Delete client", "delete-client", "x", "small", `data-id="${c.id}"`)}</div>`,
     );
   }
   function addClientModal() {
@@ -557,7 +574,7 @@ if (session.user.role === "member") {
   function programmeModal(pid) {
     const p = programme(pid);
     if (!p) return;
-    const assigned = data.clients.filter((c) => c.programme === p.id);
+    const assigned = data.clients.filter((c) => (c.programmes || []).includes(p.id));
     openModal(
       p.name,
       `${p.weeks} weeks · ${p.frequency} sessions per week · ${p.goal}`,
@@ -581,7 +598,7 @@ if (session.user.role === "member") {
     openModal(
       "A session well spent.",
       `${c.name} · ${p.name}`,
-      `<form id="workout-form" data-programme="${pid}" data-client="${cid}"><p class="field-help" style="margin-bottom:15px">Tick each exercise when the prescribed work is complete. A completed session adds 50 club points.</p>${p.exercises.map((e, i) => `<div class="workout-row"><span class="workout-index">${String(i + 1).padStart(2, "0")}</span><div><strong>${esc(exercise(e.id)?.name)}</strong><small>${esc(e.sets)}</small></div><label><span>Done</span><input type="checkbox" name="complete" value="${e.id}" required aria-label="${esc(exercise(e.id)?.name)} complete"></label></div>`).join("")}${formFooter("Complete session", "checkCircle")}</form>`,
+      `<form id="workout-form" data-programme="${pid}" data-client="${cid}"><p class="field-help" style="margin-bottom:15px">Tick each exercise when the prescribed work is complete. A completed session adds 50 club points.</p>${p.exercises.map((e, i) => `<div class="workout-row"><span class="workout-index">${String(i + 1).padStart(2, "0")}</span><div><strong>${esc(exercise(e.id)?.name)}</strong><small>${esc(e.sets)}</small></div><label><span>Done</span><input type="checkbox" name="complete" value="${e.id}" aria-label="${esc(exercise(e.id)?.name)} complete"></label></div>`).join("")}${formFooter("Complete session", "checkCircle")}</form>`,
     );
   }
   function checkinsModal() {
@@ -604,7 +621,7 @@ if (session.user.role === "member") {
       list
         .map(
           (c) =>
-            `<div class="checkin-item"><div class="checkin-top">${avatar(c)}<div><strong>${esc(c.name)}</strong><small>${esc(programme(c.programme)?.name || "Getting started")}</small></div>${pill("New", "warning")}</div><blockquote>${esc(c.checkin)}</blockquote><div class="checkin-actions">${btn("Open profile", "client", "", "small", `data-id="${c.id}"`)}${btn("Mark as reviewed", "review-checkin", "check", "primary small", `data-id="${c.id}"`)}</div></div>`,
+            `<div class="checkin-item"><div class="checkin-top">${avatar(c)}<div><strong>${esc(c.name)}</strong><small>${esc(programme((c.programmes || [])[0])?.name || "Getting started")}</small></div>${pill("New", "warning")}</div><blockquote>${esc(c.checkin)}</blockquote><div class="checkin-actions">${btn("Open profile", "client", "", "small", `data-id="${c.id}"`)}${btn("Mark as reviewed", "review-checkin", "check", "primary small", `data-id="${c.id}"`)}</div></div>`,
         )
         .join(""),
     );
@@ -1135,7 +1152,7 @@ if (session.user.role === "member") {
           name: val("name"),
           email: val("email"),
           goal: val("goal"),
-          programme: val("programme"),
+          programmes: val("programme") ? [val("programme")] : [],
           colour: ["warm", "blue", "sage", "lilac"][data.clients.length % 4],
           adherence: 0,
           streak: 0,
@@ -1174,26 +1191,30 @@ if (session.user.role === "member") {
           })),
         };
         data.programmes.push(p);
-        if (val("client")) client(val("client")).programme = p.id;
+        if (val("client")) {
+          const target = client(val("client"));
+          if (target && !target.programmes.includes(p.id)) target.programmes.push(p.id);
+        }
         activity("A new programme is ready", p.name, "book", "");
         await persist();
         go("programmes");
         toast("Programme created. A clear next step.");
       } else if (form.id === "assign-form") {
         const c = client(form.dataset.client);
-        c.programme = val("programme");
+        c.programmes = f.getAll("programmes");
         await persist();
         redraw();
         clientModal(c.id);
-        toast("Programme assignment saved.");
+        toast("Programme assignments saved.");
       } else if (form.id === "programme-assign-form") {
         const c = client(val("client"));
         if (!c) throw Error("Choose a client first.");
-        c.programme = form.dataset.programme;
+        const pid = form.dataset.programme;
+        if (!c.programmes.includes(pid)) c.programmes.push(pid);
         await persist();
         redraw();
-        programmeModal(c.programme);
-        toast(`${c.name.split(" ")[0]} has a new plan.`);
+        programmeModal(pid);
+        toast(`${c.name.split(" ")[0]} has been added to this programme.`);
       } else if (form.id === "note-form") {
         const c = client(form.dataset.client);
         if (!val("note")) throw Error("Write a note before saving.");
@@ -1234,6 +1255,11 @@ if (session.user.role === "member") {
         await persist();
         redraw();
         toast("Daily nutrition targets updated.");
+      } else if (form.id === "victor-notes-form") {
+        const c = client(ui.selectedClient);
+        c.victorNotes = val("victorNotes");
+        await persist();
+        toast("Victor's notes saved.");
       } else if (form.id === "food-form") {
         if (!val("name")) throw Error("Please enter a meal name.");
         data.meals.push({
@@ -1264,7 +1290,7 @@ if (session.user.role === "member") {
         if (val("kind") !== "Body weight")
           activity(
             `${client(val("client")).name.split(" ")[0]} logged a result`,
-            `${val("kind")} · ${num("value")} ${val("kind") === "2 km row" ? "seconds" : "kg"}`,
+            `${val("kind")} · ${formatResult(val("kind"), num("value"))}`,
             "trophy",
             "gold",
           );
@@ -1387,6 +1413,9 @@ if (session.user.role === "member") {
       if (saving) return;
       if (result.revision !== revision) {
         data = result.workspace;
+        for (const c of data.clients) {
+          if (!Array.isArray(c.programmes)) { c.programmes = c.programme ? [c.programme] : []; delete c.programme; }
+        }
         revision = result.revision;
         redraw();
       }

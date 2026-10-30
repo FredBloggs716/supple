@@ -112,6 +112,24 @@ describe("same-day session merging", () => {
   });
 });
 
+describe("member actions — rotating session logging", () => {
+  it("accepts an exercise from the member's injected session (not in the flat list) and sizes XP by the session", async () => {
+    // fullWorkspace programme id is "p1", which the member view enriches with
+    // PROGRAMME_SESSIONS. "ax-gsq" appears in a p1 session but not p.exercises.
+    const m = await member();
+    const r = await req(
+      "/api/member/actions",
+      "POST",
+      { key: "sess1", action: "workout", completed: ["ax-gsq"], total: 5, entries: [{ exercise: "ax-gsq", weight: 60, reps: 5 }] },
+      m,
+    );
+    expect(r.status).toBe(200);
+    const log = r.json.workspace.logs.find((l: any) => l.programme === "p1");
+    expect(log.completedCount).toBe(1);
+    expect(log.exerciseCount).toBe(5); // from client-reported session size
+  });
+});
+
 describe("member actions — workout validation", () => {
   it("rejects entries for an exercise not marked complete and bad loads", async () => {
     const m = await member();

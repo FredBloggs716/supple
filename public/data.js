@@ -239,7 +239,7 @@ export function seedData() {
     name,
     email: name.toLowerCase().replace(" ", ".") + "@example.com",
     colour: colours[i],
-    programme: "p" + (i % 6),
+    programmes: ["p" + (i % 6)],
     goal: ["Build strength", "Improve fitness", "Move with confidence"][i % 3],
     adherence: adherence[i],
     streak: [8, 6, 4, 7, 3, 5, 3, 6, 2, 2, 4, 3][i],
@@ -286,7 +286,7 @@ export function seedData() {
               ),
           ),
           type: "Training",
-          programme: c.programme,
+          programme: c.programmes[0],
         });
       }
     });

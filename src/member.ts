@@ -10,9 +10,9 @@ import {
   insertEvent,
   UserRow,
 } from "./db";
-import { text, number, date, validateWorkspace } from "./validate";
+import { text, number, date, validateWorkspace, normalizeClients } from "./validate";
 import { MEASURE_KINDS, testByKind } from "./tests";
-import { viewFor } from "./analytics";
+import { viewFor, programmeExerciseIds } from "./analytics";
 import { today } from "./time";
 import { randomHex } from "./crypto";
 
@@ -69,7 +69,8 @@ function pushTestFeed(w: any, cid: string, kind: string, value: number): void {
   });
   w.feed = w.feed.slice(0, 200);
 }
-function applyMemberAction(w: any, user: UserRow, body: any): void {
+export function applyMemberAction(w: any, user: UserRow, body: any): void {
+  normalizeClients(w);
   const cid = user.client as string; // members always have a client (guarded below)
   const c = w.clients.find((c: any) => c.id === cid);
   if (!c) throw new APIError("This account is no longer available.", 403);
@@ -77,12 +78,16 @@ function applyMemberAction(w: any, user: UserRow, body: any): void {
   const recordId = randomHex(16);
 
   if (action === "workout") {
-    const p = w.programmes.find((p: any) => p.id === c.programme);
+    const programmes = c.programmes as string[];
+    const programmeId = body.programmeId || programmes[0];
+    const p = w.programmes.find((p: any) => p.id === programmeId && programmes.includes(p.id));
     if (!p) throw new APIError("Your coach has not assigned a programme yet.", 409);
     // A client may log a partial session — any non-empty subset of the
     // programme's exercises (people don't always have time for all of them).
     const completed = body.completed ?? [];
-    const progIds = new Set<string>(p.exercises.map((e: any) => e.id));
+    // Members log against the session shown in their view (injected from
+    // PROGRAMME_SESSIONS), whose exercises are a superset of the flat list.
+    const progIds = programmeExerciseIds(p);
     if (
       !Array.isArray(completed) ||
       completed.length < 1 ||
@@ -91,6 +96,12 @@ function applyMemberAction(w: any, user: UserRow, body: any): void {
     ) {
       throw new APIError("Mark at least one exercise complete to log this session.");
     }
+    // The session's size drives proportional club points. Trust the client's
+    // rendered count (bounded), falling back to the flat list for old clients.
+    const sessionSize = Math.max(
+      completed.length,
+      Math.min(100, Math.floor(Number(body.total)) || p.exercises.length),
+    );
     const entries = body.entries ?? [];
     if (!Array.isArray(entries) || entries.length > 100) throw new APIError("Invalid training log.");
     for (const entry of entries) {
@@ -116,7 +127,7 @@ function applyMemberAction(w: any, user: UserRow, body: any): void {
       const done = new Set<string>(entryList.map((e: any) => e.exercise));
       for (const id of completed) done.add(id);
       existing.completedCount = done.size;
-      existing.exerciseCount = p.exercises.length;
+      existing.exerciseCount = Math.max(done.size, sessionSize);
       upsertSessionFeed(w, cid, p, existing);
     } else {
       w.logs.push({
@@ -128,7 +139,7 @@ function applyMemberAction(w: any, user: UserRow, body: any): void {
         entries,
         // Partial sessions earn proportional club points (legacy logs = full).
         completedCount: completed.length,
-        exerciseCount: p.exercises.length,
+        exerciseCount: sessionSize,
       });
       w.activity.unshift({
         id: randomHex(16),

@@ -8,7 +8,12 @@ export function startMemberApp(session) {
     board = "Attendance",
     resultKind = "Deadlift",
     modalFocus = null,
-    rows = [];
+    rows = [],
+    chatMessages = [];
+  // Normalize old single-programme string to array
+  for (const c of data.clients) {
+    if (!Array.isArray(c.programmes)) { c.programmes = c.programme ? [c.programme] : []; delete c.programme; }
+  }
   const $ = (s) => document.querySelector(s);
   const esc = (v) =>
     String(v ?? "").replace(
@@ -23,19 +28,35 @@ export function startMemberApp(session) {
         })[c],
     );
   const member = () => data.clients[0];
-  const plan = () => data.programmes[0];
+  const assignedIds = () => (member().programmes || []);
+  const plan = (pid = null) => {
+    if (pid) return data.programmes.find((p) => p.id === pid) || null;
+    const ids = assignedIds();
+    return ids.length ? (data.programmes.find((p) => p.id === ids[0]) || null) : null;
+  };
   const count = () =>
     data.logs.filter((l) => l.date >= mondayOf(TODAY) && l.date <= TODAY)
       .length;
   const nav = [
     ["today", "home", "Today"],
     ["programme", "book", "My programme"],
+    ["stcprogrammes", "book", "STC programmes"],
+    ["chat", "message", "Victor"],
     ["nutrition", "nutrition", "Nutrition"],
     ["progress", "chart", "Progress"],
     ["library", "video", "Exercise library"],
     ["club", "trophy", "The club"],
     ["account", "user", "My account"],
   ];
+  const PROG_CATS = {
+    "S&C":         ["p0","p1","p3","p4","p5","ap-triphasic","ap-power","ap-platform","ap-tendon"],
+    Kettlebell:    ["ap-kb","ap-found"],
+    Gymnastics:    ["ap-hs1","ap-hs2","ap-hs3","ap-gym1","ap-gym2","ap-gym3","ap-gym4","ap-gym5"],
+    Calisthenics:  ["ap-exstr","ap-excon"],
+    Mobility:      ["p2","ap-mobility","ap-superjoints"],
+    "Touch Rugby": [],
+    Rugby:         [],
+  };
   const avatar = () =>
     `<span class="avatar ${esc(member().colour)}">${esc(
       member()
@@ -63,12 +84,25 @@ export function startMemberApp(session) {
     data.logs
       .filter((l) => l.date >= mondayOf(TODAY) && l.date <= TODAY)
       .reduce((s, l) => s + xpFor(l), 0);
-  const sessionToday = () =>
-    plan() && data.logs.find((l) => l.date === TODAY && l.programme === plan().id);
-  const startLabel = (full) => {
-    const l = sessionToday();
+  const sessionToday = (pid = null) => {
+    const p = plan(pid);
+    return p ? data.logs.find((l) => l.date === TODAY && l.programme === p.id) : null;
+  };
+  const startLabel = (full, pid = null) => {
+    const l = sessionToday(pid);
     if (!l) return full ? "Start your session" : "Start session";
     return (l.completedCount ?? 1) >= (l.exerciseCount ?? 1) ? "Session done — review" : "Continue today's session";
+  };
+  const lastSession = (pid) => {
+    return data.logs
+      .filter((l) => l.programme === pid && l.date < TODAY && Array.isArray(l.entries) && l.entries.length)
+      .sort((a, b) => b.date.localeCompare(a.date))[0] || null;
+  };
+  const programmeSessions = (pid) => data.logs.filter((l) => l.programme === pid).length;
+  const weekNum = (p) => p ? Math.min(p.weeks, Math.floor(programmeSessions(p.id) / Math.max(1, p.frequency)) + 1) : 1;
+  const currentSession = (p) => {
+    if (!p || !Array.isArray(p.sessions) || !p.sessions.length) return null;
+    return p.sessions[programmeSessions(p.id) % p.sessions.length];
   };
   const results = () =>
     data.measures
@@ -87,31 +121,43 @@ export function startMemberApp(session) {
     $("#toast").classList.add("show");
     toastTimer = setTimeout(() => $("#toast").classList.remove("show"), 4200);
   }
+  function normalizeMember(d) {
+    for (const c of d.clients) {
+      if (!Array.isArray(c.programmes)) { c.programmes = c.programme ? [c.programme] : []; delete c.programme; }
+    }
+  }
   async function update(action, fields = {}) {
     const res = await api("/api/member/actions", {
       method: "POST",
       body: { action, key: crypto.randomUUID(), ...fields },
     });
     data = res.workspace;
+    normalizeMember(data);
     render();
   }
   function metric(label, value, unit = "") {
     return `<div class="metric"><small>${esc(label)}</small><strong>${esc(value)} <small>${esc(unit)}</small></strong><span>One step at a time.</span></div>`;
   }
-  function programmeRows(check = false) {
+  function programmeRows(progArg = null, check = false) {
+    const p = progArg || plan();
+    const sess = currentSession(p);
+    const exerciseList = sess ? sess.exercises : (p ? p.exercises : []);
     const thumb = (e) => {
       const m = String(e.videoUrl || "").match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
       return m
         ? `<button class="workout-thumb-btn" data-member-action="exercise" data-id="${e.id}" aria-label="Watch ${esc(e.name)} demonstration"><img src="https://i.ytimg.com/vi/${m[1]}/mqdefault.jpg" alt="" loading="lazy">${icon("play")}</button>`
         : "";
     };
-    const todayLog = data.logs.find((l) => l.date === TODAY && l.programme === plan().id);
+    const todayLog = p ? data.logs.find((l) => l.date === TODAY && l.programme === p.id) : null;
     const doneToday = new Map((todayLog?.entries || []).map((en) => [en.exercise, en]));
-    return plan()
-      .exercises.map((item, i) => {
+    const prev = check ? lastSession(p?.id) : null;
+    const prevEntries = new Map((prev?.entries || []).map((en) => [en.exercise, en]));
+    return exerciseList.map((item, i) => {
         const e = data.exercises.find((e) => e.id === item.id);
         const prior = doneToday.get(e.id);
-        return `<div class="workout-row"><span class="workout-index">${String(i + 1).padStart(2, "0")}</span>${thumb(e)}<div><strong>${esc(e.name)}</strong><small>${esc(item.sets)} · ${esc(e.equipment)}</small><button class="text-link" style="font-size:10px;margin-top:7px" data-member-action="exercise" data-id="${e.id}">Technique guide${icon("play")}</button></div>${check ? (prior ? `<div class="set-log"><span class="pill success">Done today · ${prior.weight} kg × ${prior.reps}</span></div>` : `<div class="set-log"><label>Load (kg)<input name="weight-${e.id}" type="number" min="0" max="1000" step="0.5" value="0" aria-label="${esc(e.name)} load in kg"></label><label>Reps<input name="reps-${e.id}" type="number" min="1" max="1000" value="10" aria-label="${esc(e.name)} reps"></label><label class="done-check"><input type="checkbox" name="complete" value="${e.id}">Done</label></div>`) : prior ? `<span class="pill success">Done today</span>` : `<span class="mono">${esc(item.sets)}</span>`}</div>`;
+        const last = prevEntries.get(e.id);
+        const lastHint = last ? `<small class="field-help" style="margin-top:4px">Last session: ${last.weight} kg × ${last.reps} reps</small>` : "";
+        return `<div class="workout-row"><span class="workout-index">${String(i + 1).padStart(2, "0")}</span>${thumb(e)}<div><strong>${esc(e.name)}</strong><small>${esc(item.sets)} · ${esc(e.equipment)}</small><button class="text-link" style="font-size:10px;margin-top:7px" data-member-action="exercise" data-id="${e.id}">Technique guide${icon("play")}</button></div>${check ? (prior ? `<div class="set-log"><span class="pill success">Done today · ${prior.weight} kg × ${prior.reps}</span></div>` : `<div class="set-log">${lastHint}<label>Load (kg)<input name="weight-${e.id}" type="number" min="0" max="1000" step="0.5" value="${last?.weight ?? 0}" aria-label="${esc(e.name)} load in kg"></label><label>Reps<input name="reps-${e.id}" type="number" min="1" max="1000" value="${last?.reps ?? 10}" aria-label="${esc(e.name)} reps"></label><label class="done-check"><input type="checkbox" name="complete" value="${e.id}">Done</label></div>`) : prior ? `<span class="pill success">Done today</span>` : `<span class="mono">${esc(item.sets)}</span>`}</div>`;
       })
       .join("");
   }
@@ -119,7 +165,14 @@ export function startMemberApp(session) {
     const next = data.sessions
       .filter((s) => s.date >= TODAY && s.status !== "Completed")
       .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
-    return `${title("Good to see you, " + member().name.split(" ")[0] + ".", "A little consistency. A little support. Your next step is here.", btn("Check in with coach", "checkin", "message", "accent"))}<div class="metrics-grid section-gap">${metric("This week", count(), "sessions")}${metric("Training streak", member().streak, "weeks")}${metric("Club points", xpWeek(), "XP")}</div><div class="hero member-hero"><div><div class="eyebrow">${plan() ? "YOUR TRAINING PLAN" : "A PLACE TO START"}</div><h2>${esc(plan()?.name || "Welcome to your club.")}</h2><p>${esc(plan()?.description || "Your coach will assign your programme here. For now, make yourself at home.")}</p><div class="hero-actions">${plan() ? btn(startLabel(true), "start-workout", "arrow", "white") : btn("Send a check-in", "checkin", "arrow", "white")}</div></div><img src="assets/logo-mark-white.png" class="member-hero-mark" alt=""></div><div class="two-col section-gap" style="margin-top:22px"><section class="panel"><div class="panel-head"><h2>Your next session</h2>${icon("calendar")}</div>${next ? `<div class="session-row"><span class="session-time">${esc(next.time)}</span><i class="session-bar"></i><div class="session-info"><strong>${esc(next.name)}</strong><small>${dateLabel(next.date)} · ${next.duration} min · Coach ${esc(next.coach)}</small></div></div>` : '<div class="panel-pad muted">No sessions booked yet. Your coach will add them here.</div>'}<div class="panel-footer"><span>Keep a little space in your week for yourself.</span></div></section><section class="panel"><div class="panel-head"><h2>This week's tests</h2>${icon("target")}</div>${weeklyTests(TODAY)
+    const p0 = plan();
+    const wk = p0 ? weekNum(p0) : null;
+    const prevS = p0 ? lastSession(p0.id) : null;
+    const nextSess = p0 ? currentSession(p0) : null;
+    const heroSub = p0
+      ? `Week ${wk} of ${p0.weeks} · ${programmeSessions(p0.id)} sessions logged${prevS ? " · Last: " + dateLabel(prevS.date) : ""}${nextSess ? " · Next: " + nextSess.name : ""}`
+      : "Your coach will assign your programme here. For now, make yourself at home.";
+    return `${title("Good to see you, " + member().name.split(" ")[0] + ".", "A little consistency. A little support. Your next step is here.", btn("Check in with coach", "checkin", "message", "accent"))}<div class="metrics-grid section-gap">${metric("This week", count(), "sessions")}${metric("Training streak", member().streak, "weeks")}${metric("Club points", xpWeek(), "XP")}</div><div class="hero member-hero"><div><div class="eyebrow">${p0 ? "YOUR TRAINING PLAN" : "A PLACE TO START"}</div><h2>${esc(p0?.name || "Welcome to your club.")}</h2><p>${esc(heroSub)}</p><div class="hero-actions">${p0 ? btn(startLabel(true), "start-workout", "arrow", "white", `data-programme="${p0.id}"`) : btn("Send a check-in", "checkin", "arrow", "white")}</div></div><img src="assets/logo-mark-white.png" class="member-hero-mark" alt=""></div><div class="two-col section-gap" style="margin-top:22px"><section class="panel"><div class="panel-head"><h2>Your next session</h2>${icon("calendar")}</div>${next ? `<div class="session-row"><span class="session-time">${esc(next.time)}</span><i class="session-bar"></i><div class="session-info"><strong>${esc(next.name)}</strong><small>${dateLabel(next.date)} · ${next.duration} min · Coach ${esc(next.coach)}</small></div></div>` : '<div class="panel-pad muted">No sessions booked yet. Your coach will add them here.</div>'}<div class="panel-footer"><span>Keep a little space in your week for yourself.</span></div></section><section class="panel"><div class="panel-head"><h2>This week's tests</h2>${icon("target")}</div>${weeklyTests(TODAY)
       .map((t) => {
         const mine = data.measures
           .filter((m) => m.kind === t.kind && m.date >= mondayOf(TODAY) && m.date <= TODAY)
@@ -140,18 +193,75 @@ export function startMemberApp(session) {
     }</section>`;
   }
   function programmePage() {
-    if (!plan())
-      return (
-        title(
-          "A plan is on its way.",
-          "Your coach will assign your programme here.",
-        ) +
-        empty(
-          "Your training starts with you.",
-          "Send your coach a check-in to talk about your goals.",
-        )
+    const ids = assignedIds();
+    const assigned = ids.map((id) => data.programmes.find((p) => p.id === id)).filter(Boolean);
+    const catalogue = data.programmes.filter((p) => !ids.includes(p.id));
+
+    let html = title(
+      "A plan with purpose.",
+      assigned.length
+        ? `${assigned.length} programme${assigned.length > 1 ? "s" : ""} assigned to you`
+        : "Browse what's on offer below.",
+    );
+
+    if (assigned.length) {
+      for (const p of assigned) {
+        const wk = weekNum(p);
+        const total = programmeSessions(p.id);
+        const prev = lastSession(p.id);
+        const nextS = currentSession(p);
+        const progressLine = `Week ${wk} of ${p.weeks} · ${total} session${total !== 1 ? "s" : ""} logged${prev ? " · Last: " + dateLabel(prev.date) : ""}${nextS ? " · Next: " + nextS.name : ""}`;
+        const guideHtml = p.guide
+          ? `<details class="coach-guide"><summary>Coach's guide${icon("book")}</summary><p style="font-size:13px;line-height:1.9;margin-bottom:14px">${esc(p.guide.intro)}</p><ol class="technique-list">${(p.guide.tips || []).map((t) => `<li>${esc(t)}</li>`).join("")}</ol></details>`
+          : "";
+        html += `<section class="panel" style="margin-bottom:22px"><div class="programme-cover"><span class="eyebrow">YOUR ASSIGNED PROGRAMME</span><img class="cover-mark" src="assets/logo-mark-white.png" alt=""><h3>${esc(p.name)}</h3></div><div class="panel-pad"><p style="font-size:11px;color:var(--muted);margin-bottom:10px">${esc(progressLine)}</p><p style="font-size:13px;line-height:1.8;margin-bottom:14px">${esc(p.description)}</p>${guideHtml}${programmeRows(p)}<div style="margin-top:20px">${btn(startLabel(false, p.id), "start-workout", "play", "accent", `data-programme="${esc(p.id)}"`)}</div></div></section>`;
+      }
+    } else {
+      html += empty(
+        "Your training starts with you.",
+        "Send your coach a check-in to talk about your goals.",
       );
-    return `${title("A plan with purpose.", `${plan().weeks} weeks · ${plan().frequency} sessions per week`, btn(startLabel(false), "start-workout", "play", "accent"))}<section class="panel"><div class="programme-cover"><span class="eyebrow">YOUR ASSIGNED PROGRAMME</span><img class="cover-mark" src="assets/logo-mark-white.png" alt=""><h3>${esc(plan().name)}</h3></div><div class="panel-pad"><p style="font-size:13px;line-height:1.8;margin-bottom:20px">${esc(plan().description)}</p>${programmeRows()}</div></section>`;
+    }
+
+    if (catalogue.length) {
+      html += `<div class="page-heading" style="margin-top:28px"><div><div class="eyebrow">ALL CLUB PROGRAMMES</div><h2>What's on offer.</h2><p>Your coach will assign the right one for you.</p></div></div>`;
+      for (const p of catalogue) {
+        html += `<section class="panel" style="margin-bottom:16px"><div class="programme-cover ${esc(p.colour)}" style="padding:22px 24px 18px"><span class="eyebrow">SOCIAL TRAINING CLUB</span><img class="cover-mark" src="assets/logo-mark${p.colour === "light" ? "" : "-white"}.png" alt="" style="opacity:0.25"><h3>${esc(p.name)}</h3></div><div class="panel-pad"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><span class="pill neutral">${esc(p.goal)}</span><span class="pill neutral">${p.weeks} weeks</span><span class="pill neutral">${p.frequency} sessions/week</span></div><p style="font-size:12px;line-height:1.8">${esc(p.description)}</p></div></section>`;
+      }
+    }
+
+    return html;
+  }
+  function stcProgrammesPage() {
+    const ids = assignedIds();
+    const catOrder = Object.keys(PROG_CATS);
+    const bucketed = {};
+    const seen = new Set();
+    for (const cat of catOrder) {
+      bucketed[cat] = PROG_CATS[cat]
+        .map((id) => data.programmes.find((p) => p.id === id))
+        .filter(Boolean);
+      for (const p of bucketed[cat]) seen.add(p.id);
+    }
+    const overflow = data.programmes.filter((p) => !seen.has(p.id));
+    if (overflow.length) {
+      bucketed["Other"] = overflow;
+      catOrder.push("Other");
+    }
+    let html = title("Everything the club offers.", "Browse all programmes by category. Your coach assigns the right one for you.");
+    for (const cat of catOrder) {
+      const progs = bucketed[cat] || [];
+      html += `<div class="page-heading" style="margin-top:28px;margin-bottom:6px"><div><div class="eyebrow">${esc(cat.toUpperCase())}</div><h2>${esc(cat)}</h2></div></div>`;
+      if (!progs.length) {
+        html += `<section class="panel" style="margin-bottom:16px"><div class="panel-pad muted">Coming soon — check back after the next club update.</div></section>`;
+        continue;
+      }
+      for (const p of progs) {
+        const mine = ids.includes(p.id);
+        html += `<section class="panel" style="margin-bottom:14px"><div class="programme-cover ${esc(p.colour)}" style="padding:22px 24px 18px"><span class="eyebrow">${mine ? "YOUR ASSIGNED PROGRAMME" : "SOCIAL TRAINING CLUB"}</span><img class="cover-mark" src="assets/logo-mark${p.colour === "light" ? "" : "-white"}.png" alt="" style="opacity:0.25"><h3>${esc(p.name)}</h3></div><div class="panel-pad"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><span class="pill neutral">${esc(p.goal)}</span><span class="pill neutral">${p.weeks} weeks</span><span class="pill neutral">${p.frequency} sessions/week</span>${mine ? '<span class="pill success">Your programme</span>' : ""}</div><p style="font-size:12px;line-height:1.8">${esc(p.description)}</p>${mine ? `<div style="margin-top:14px"><button class="btn small" data-member-nav="programme">${icon("arrow")}Go to my programme</button></div>` : ""}</div></section>`;
+      }
+    }
+    return html;
   }
   function nutritionPage() {
     const meals = data.meals.filter((m) => m.date === TODAY);
@@ -229,13 +339,61 @@ export function startMemberApp(session) {
       );
     return `${title("A little friendly competition.", "Your club. Your people. Celebrate showing up.", btn("Log a test result", "result", "plus", "accent"))}<div class="leader-hero"><div><div class="eyebrow">STRONGER TOGETHER</div><h2>Different starting points.<br>One team.</h2><p>Every session counts. Earn 50 XP each time you train.</p></div>${icon("trophy")}</div>${!member().leaderboardOptIn ? '<div class="tip section-gap">' + icon("shield") + "<div><strong>You control what you share.</strong>Turn on club participation in My account to share your attendance and benchmarks. Body weight and coach notes always stay private.</div></div>" : ""}<section class="panel" style="margin-bottom:22px"><div class="panel-head"><h2>Club feed</h2>${(() => { let wa = ""; try { const u = new URL(data.settings.whatsapp || ""); if (u.protocol === "https:") wa = u.href; } catch {} return wa ? `<a class="btn small" href="${esc(wa)}" target="_blank" rel="noopener">${icon("message")}Club WhatsApp</a>` : icon("users"); })()}</div>${(data.feed || []).length ? (data.feed || []).map((f) => { const mine = f.client === member().id; const liked = (f.kudos || []).includes(member().id); const what = f.kind === "test" ? `${esc(f.title)} · ${formatResult(f.title, f.value)}` : `${esc(f.title)} · ${esc(f.detail)}`; return `<div class="meal-row"><span class="meal-icon">${icon(f.kind === "test" ? "target" : "checkCircle")}</span><div><strong>${esc(f.name)}${mine ? " (you)" : ""}</strong><small>${dateLabel(f.date)} · ${what}</small></div><button class="btn small ${liked ? "primary" : ""}" data-member-action="kudos" data-id="${f.id}" aria-label="Give kudos">🔥${(f.kudos || []).length ? " " + (f.kudos || []).length : ""}</button></div>`; }).join("") : `<div class="panel-pad muted">Sessions and test results appear here as the club trains. ${member().leaderboardOptIn ? "Log a session to start the feed." : "Turn on club participation in My account to share yours."}</div>`}</section><section class="panel"><div class="panel-head"><h2>The club leaderboard</h2><span class="pill neutral">${board === "Attendance" ? "This week" : "This week's test"}</span></div><div class="chart-options" style="padding-bottom:17px"><div class="tabs">${["Attendance", ...weekly.map((t) => t.kind)].map((k) => `<button class="tab ${board === k ? "active" : ""}" data-member-action="board" data-value="${esc(k)}">${esc(k)}</button>`).join("")}</div></div><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Club member</th><th>${board === "Attendance" ? "Sessions" : "Result"}</th><th>${board === "Attendance" ? "Tests + points" : "Club points"}</th></tr></thead><tbody>${list.map((r, i) => `<tr><td><span class="rank ${i === 0 ? "top" : ""}">${String(i + 1).padStart(2, "0")}</span></td><td><strong>${esc(r.name)}</strong>${r.id === member().id ? '<span class="pill neutral" style="margin-left:8px">You</span>' : ""}</td><td class="mono">${board === "Attendance" ? r.sessions : formatResult(board, r.tests[board])}</td><td>${board === "Attendance" ? `<span class="pill ${r.testsThisWeek ? "success" : "neutral"}">${r.testsThisWeek ?? 0}/3 tests</span> <span class="pill success">${r.xp ?? r.sessions * 50} XP</span>` : `<span class="pill success">${r.xp ?? r.sessions * 50} XP</span>`}</td></tr>`).join("") || '<tr><td colspan="4">No results logged this week yet. Your next result can start the board.</td></tr>'}</tbody></table></div></section>`;
   }
+  function chatPage() {
+    const messages = chatMessages;
+    function chatBubbles() {
+      if (!messages.length) return '<div class="chat-empty"><p>Ask me anything — technique, which programme suits you, how to progress, nutrition basics, or how to use the app.</p></div>';
+      return messages.map(m => {
+        const safeContent = esc(m.content).replace(/\n/g, "<br>");
+        return `<div class="chat-msg chat-msg--${m.role}"><div class="chat-bubble">${safeContent}</div></div>`;
+      }).join("");
+    }
+    function refreshMsgs() {
+      const el = document.getElementById("chat-msgs");
+      if (!el) return;
+      el.innerHTML = chatBubbles();
+      el.scrollTop = el.scrollHeight;
+    }
+    // Wire up the form after the page HTML lands in the DOM
+    setTimeout(() => {
+      const form = document.getElementById("chat-form");
+      if (!form) return;
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const input = document.getElementById("chat-input");
+        const send = document.getElementById("chat-send");
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = "";
+        messages.push({ role: "user", content: text });
+        const loadingMsg = { role: "assistant", content: "…" };
+        messages.push(loadingMsg);
+        refreshMsgs();
+        if (send) send.disabled = true;
+        try {
+          const res = await api("/api/chat", {
+            method: "POST",
+            body: { messages: messages.filter(m => m !== loadingMsg).map(m => ({ role: m.role, content: m.content })) },
+          });
+          const idx = messages.indexOf(loadingMsg);
+          if (idx !== -1) messages[idx] = { role: "assistant", content: res.reply };
+        } catch {
+          const idx = messages.indexOf(loadingMsg);
+          if (idx !== -1) messages[idx] = { role: "assistant", content: "Victor is temporarily unavailable. Try again in a moment." };
+        }
+        refreshMsgs();
+        if (send) send.disabled = false;
+      });
+    }, 0);
+    return `${title("Victor", "Ask anything about your training, the programmes or how the app works.")}<div class="chat-wrap"><div class="chat-messages" id="chat-msgs">${chatBubbles()}</div><form class="chat-input-row" id="chat-form"><input class="chat-input" id="chat-input" type="text" placeholder="Ask Victor…" autocomplete="off" maxlength="500" required><button class="btn accent" type="submit" id="chat-send">Send</button></form></div>`;
+  }
   function accountPage() {
     return `${title("Your corner of the club.", "A few details, just for you.")}<div class="two-col"><section class="panel panel-pad"><div class="profile-head">${avatar()}<div><h3>${esc(member().name)}</h3><p>${esc(member().email)}</p></div></div><div class="info-row"><span>Your coach</span><strong>${esc(data.settings.coach)}</strong></div><div class="info-row"><span>Your goal</span><strong>${esc(member().goal)}</strong></div><form id="member-privacy"><div class="settings-row"><div><strong>Join the club leaderboard</strong><p>Share your first name, last initial, attendance and training benchmarks with signed-in club members. Your body weight stays private.</p></div><label class="switch"><input name="optIn" type="checkbox" ${member().leaderboardOptIn ? "checked" : ""} aria-label="Join the club leaderboard"><span></span></label></div><button class="btn primary" type="submit">Save preference${icon("check")}</button></form></section><section class="panel panel-pad"><h2>Your sign-in details</h2><p class="muted" style="font-size:12px;line-height:1.8;margin:13px 0 22px">Your records are shared only with your coach. Sign out when you finish on a shared device.</p><div class="account-actions">${btn("Change password", "password", "shield", "full")}${btn("Sign out", "logout", "arrow", "full")}</div></section></div>`;
   }
   function render() {
     document.title = `${nav.find((n) => n[0] === route)?.[2]} · Social Training Club`;
     $("#app").innerHTML =
-      `<button class="menu-scrim" data-member-action="menu-close" aria-label="Close navigation"></button><aside class="sidebar"><a class="brand" href="#today" data-member-nav="today"><img src="assets/logo-mark.png" alt=""><div class="wordmark">SOCIAL<br>TRAINING CLUB<span>STRONGER TOGETHER</span></div></a><div class="workspace-switch"><span class="workspace-icon">${icon("users")}</span><span><strong>Member workspace</strong><small>${esc(data.settings.club)}</small></span></div><p class="nav-label">YOUR TRAINING</p><nav class="nav-list">${nav.map(([key, ic, name]) => `<button class="nav-link ${key === route ? "active" : ""}" data-member-nav="${key}" ${key === route ? 'aria-current="page"' : ""}>${icon(ic)}${name}</button>`).join("")}</nav><div class="sidebar-bottom"><div class="club-note">${icon("heart")}<strong>Good people. Better together.</strong>Keep showing up. We’re in your corner.</div><button class="coach-profile" data-member-nav="account">${avatar()}<span><strong>${esc(member().name)}</strong><small>Club member</small></span>${icon("chevron")}</button></div></aside><div class="shell"><header class="topbar"><button class="icon-btn mobile-menu" data-member-action="menu" aria-label="Open navigation">${icon("menu")}</button><div class="breadcrumbs"><span>Your club</span>${icon("chevron")}<strong>${nav.find((n) => n[0] === route)?.[2]}</strong></div><button class="icon-btn" data-member-nav="account" aria-label="Your account">${avatar()}</button></header><main class="content" id="main" tabindex="-1">${{ today: todayPage, programme: programmePage, nutrition: nutritionPage, progress: progressPage, library: libraryPage, club: clubPage, account: accountPage }[route]()}<footer class="page-footer"><span class="footer-brand"><img src="assets/logo-mark.png" alt="">Social Training Club · Built on showing up.</span><span class="local-status"><i class="dot"></i>Shared with your coach</span></footer></main></div>`;
+      `<button class="menu-scrim" data-member-action="menu-close" aria-label="Close navigation"></button><aside class="sidebar"><a class="brand" href="#today" data-member-nav="today"><img src="assets/logo-mark.png" alt=""><div class="wordmark">SOCIAL<br>TRAINING CLUB<span>STRONGER TOGETHER</span></div></a><div class="workspace-switch"><span class="workspace-icon">${icon("users")}</span><span><strong>Member workspace</strong><small>${esc(data.settings.club)}</small></span></div><p class="nav-label">YOUR TRAINING</p><nav class="nav-list">${nav.map(([key, ic, name]) => `<button class="nav-link ${key === route ? "active" : ""}" data-member-nav="${key}" ${key === route ? 'aria-current="page"' : ""}>${icon(ic)}${name}</button>`).join("")}</nav><div class="sidebar-bottom"><div class="club-note">${icon("heart")}<strong>Good people. Better together.</strong>Keep showing up. We’re in your corner.</div><button class="coach-profile" data-member-nav="account">${avatar()}<span><strong>${esc(member().name)}</strong><small>Club member</small></span>${icon("chevron")}</button></div></aside><div class="shell"><header class="topbar"><button class="icon-btn mobile-menu" data-member-action="menu" aria-label="Open navigation">${icon("menu")}</button><div class="breadcrumbs"><span>Your club</span>${icon("chevron")}<strong>${nav.find((n) => n[0] === route)?.[2]}</strong></div><button class="icon-btn" data-member-nav="account" aria-label="Your account">${avatar()}</button></header><main class="content" id="main" tabindex="-1">${{ today: todayPage, programme: programmePage, stcprogrammes: stcProgrammesPage, chat: chatPage, nutrition: nutritionPage, progress: progressPage, library: libraryPage, club: clubPage, account: accountPage }[route]()}<footer class="page-footer"><span class="footer-brand"><img src="assets/logo-mark.png" alt="">Social Training Club · Built on showing up.</span><span class="local-status"><i class="dot"></i>Shared with your coach</span></footer></main></div>`;
   }
   async function go(next) {
     route = nav.some((n) => n[0] === next) ? next : "today";
@@ -293,12 +451,19 @@ export function startMemberApp(session) {
     kudos: async (el) => {
       await update("kudos", { id: el.dataset.id });
     },
-    "start-workout": () => {
-      if (!plan()) return;
+    "start-workout": (el) => {
+      const pid = el?.dataset?.programme || plan()?.id;
+      const p = pid ? plan(pid) : plan();
+      if (!p) return;
+      const ws = currentSession(p);
+      const todayLog = data.logs.find((l) => l.date === TODAY && l.programme === p.id);
+      const doneN = todayLog?.completedCount ?? (todayLog?.entries?.length || 0);
+      const totalN = (ws ? ws.exercises : p.exercises)?.length || 0;
+      const sub = `${p.name}${ws ? " · " + ws.name : ""}${doneN ? ` · ${doneN} of ${totalN} done today` : ""}`;
       modal(
-        "Your next strong session.",
-        plan().name,
-        `<form id="member-workout"><p class="field-help">Follow your prescribed sets. Record your working load and reps, then mark each movement complete.</p>${programmeRows(true)}${footer("Complete session")}</form>`,
+        "Today’s session.",
+        sub,
+        `<form id="member-workout" data-programme="${esc(p.id)}"><p class="field-help">Enter your load and reps, or tap a movement, to mark it done — then press Save. Your session stays here all day; come back any time to add the rest. A fresh session arrives tomorrow.</p>${programmeRows(p, true)}${footer("Save today’s progress")}</form>`,
       );
     },
     exercise: (el) => {
@@ -372,6 +537,18 @@ export function startMemberApp(session) {
         $("#main").focus();
         return;
       }
+      // Tapping an exercise row (anywhere but its technique button, thumbnail or
+      // the load/reps inputs) marks that movement complete — the small "Done"
+      // checkbox is easy to miss, so the whole row is the target.
+      const wrow = e.target.closest("#member-workout .workout-row");
+      if (wrow && !button && !e.target.closest("label,input,button")) {
+        const cb = wrow.querySelector('input[name="complete"]');
+        if (cb) {
+          cb.checked = !cb.checked;
+          wrow.classList.toggle("is-done", cb.checked);
+        }
+        return;
+      }
       if (navEl) {
         e.preventDefault();
         await go(navEl.dataset.memberNav);
@@ -390,6 +567,15 @@ export function startMemberApp(session) {
   document.addEventListener("input", (e) => {
     if (e.target.id === "member-exercise-search")
       $("#member-exercises").innerHTML = exerciseCards(e.target.value);
+    if (e.target.matches('#member-workout input[name="complete"]'))
+      e.target.closest(".workout-row")?.classList.toggle("is-done", e.target.checked);
+    // Entering your load or reps for a movement means you did it — mark the row
+    // done automatically so Save never blocks after you've logged your numbers.
+    if (e.target.matches('#member-workout input[name^="weight-"], #member-workout input[name^="reps-"]')) {
+      const wrow = e.target.closest(".workout-row");
+      const cb = wrow?.querySelector('input[name="complete"]');
+      if (cb && !cb.checked) { cb.checked = true; wrow.classList.add("is-done"); }
+    }
   });
   document.addEventListener("submit", async (e) => {
     const form = e.target;
@@ -401,22 +587,38 @@ export function startMemberApp(session) {
     submit.disabled = true;
     try {
       if (form.id === "member-workout") {
+        const programmeId = form.dataset.programme || plan()?.id;
+        const p = plan(programmeId);
         const completed = f.getAll("complete");
-        if (!completed.length) throw Error("Mark at least one movement complete to log this session.");
+        if (!completed.length) {
+          // No checkboxes at all = every movement is already logged today. Don't
+          // dead-end on an error — just close; the session is done.
+          if (!form.querySelector('input[name="complete"]')) {
+            close();
+            toast("This session's already logged today. Nice work.");
+            return;
+          }
+          throw Error("Tap each exercise you did to mark it done, then press Complete session.");
+        }
+        // Members may be shown a rotating session (currentSession) whose exercises
+        // differ from the programme's flat list — build entries from the ticked
+        // ids themselves, and report the session's true size for XP accounting.
+        const sess = currentSession(p);
+        const total = (sess ? sess.exercises : p?.exercises || []).length;
         await update("workout", {
+          programmeId,
           completed,
-          entries: plan()
-            .exercises.filter((e) => completed.includes(e.id))
-            .map((e) => ({
-              exercise: e.id,
-              weight: Number(f.get("weight-" + e.id)),
-              reps: Number(f.get("reps-" + e.id)),
-            })),
+          total,
+          entries: completed.map((id) => ({
+            exercise: id,
+            weight: Number(f.get("weight-" + id)),
+            reps: Number(f.get("reps-" + id)),
+          })),
         });
         close();
-        const merged = data.logs.find((l) => l.date === TODAY && l.programme === plan().id);
+        const merged = data.logs.find((l) => l.date === TODAY && l.programme === programmeId);
         const doneCount = merged?.completedCount ?? completed.length;
-        const totalCount = merged?.exerciseCount ?? plan().exercises.length;
+        const totalCount = merged?.exerciseCount ?? (total || 1);
         toast(
           doneCount >= totalCount
             ? "Full session logged. 50 club points earned."
@@ -508,6 +710,7 @@ export function startMemberApp(session) {
       return;
     try {
       data = (await api("/api/workspace")).workspace;
+      normalizeMember(data);
       if (route === "club") rows = (await api("/api/leaderboard")).rows;
       render();
     } catch {}

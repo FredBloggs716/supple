@@ -6,6 +6,7 @@ export interface Env {
   ASSETS: Fetcher;
   STC_PUBLIC_ORIGIN: string;
   STC_SETUP_TOKEN: string;
+  AI: Ai;
 }
 
 // The canonical origin: the configured public origin, else the request's own.

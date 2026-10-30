@@ -76,6 +76,10 @@ export function userByEmail(db: D1Database, email: string): Promise<UserRow | nu
   return db.prepare("SELECT * FROM users WHERE email=?").bind(email).first<UserRow>();
 }
 
+export async function userExistsByClient(db: D1Database, clientId: string): Promise<boolean> {
+  return !!(await db.prepare("SELECT 1 FROM users WHERE client=?").bind(clientId).first());
+}
+
 export async function insertUser(db: D1Database, u: UserRow): Promise<void> {
   await db
     .prepare("INSERT INTO users VALUES(?,?,?,?,?,?)")

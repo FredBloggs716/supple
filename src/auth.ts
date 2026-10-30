@@ -17,6 +17,7 @@ import {
   getWorkspace,
   limitLogin,
   clearAccountAttempts,
+  userExistsByClient,
   UserRow,
 } from "./db";
 import {
@@ -140,10 +141,13 @@ export async function inviteInfo(req: Request, env: Env, token: string): Promise
       410,
     );
   }
-  const { w } = await getWorkspace(env.DB);
+  const [{ w }, hasAccount] = await Promise.all([
+    getWorkspace(env.DB),
+    userExistsByClient(env.DB, row.client),
+  ]);
   const c = w.clients.find((c: any) => c.id === row.client);
   if (!c) throw new APIError("This invitation is no longer available.", 410);
-  return json({ name: c.name, email: c.email, club: w.settings.club }, 200, {}, origin);
+  return json({ name: c.name, email: c.email, club: w.settings.club, hasAccount }, 200, {}, origin);
 }
 
 export async function acceptInvite(req: Request, env: Env): Promise<Response> {

@@ -17,3 +17,7 @@ node_modules/
 .wrangler/
 .dev.vars
 dist/
+
+# local repro data (contains real member data) — never commit
+.repro/
+test/repro.test.ts

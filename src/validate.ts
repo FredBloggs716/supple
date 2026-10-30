@@ -54,10 +54,21 @@ export function email(value: unknown): string {
   return v;
 }
 
+export function normalizeClients(w: any): void {
+  if (!w?.clients) return;
+  for (const c of w.clients) {
+    if (!Array.isArray(c.programmes)) {
+      c.programmes = c.programme ? [c.programme] : [];
+      delete c.programme;
+    }
+  }
+}
+
 export function validateWorkspace(w: any): Workspace {
   if (!w || typeof w !== "object" || Array.isArray(w) || w.version !== 1) {
     throw new APIError("The workspace format is invalid.");
   }
+  normalizeClients(w);
   if (
     !w.settings || typeof w.settings !== "object" || Array.isArray(w.settings) ||
     !w.water || typeof w.water !== "object" || Array.isArray(w.water)
@@ -105,8 +116,13 @@ export function validateWorkspace(w: any): Workspace {
     if (!["warm", "blue", "sage", "lilac", "pink", ""].includes(c.colour)) {
       throw new APIError("Invalid client colour.");
     }
-    if (c.programme && !ids["programmes"].has(c.programme)) {
-      throw new APIError("The assigned programme does not exist.");
+    if (!Array.isArray(c.programmes)) {
+      throw new APIError("Invalid programme assignments.");
+    }
+    for (const pid of c.programmes) {
+      if (!ids["programmes"].has(pid)) {
+        throw new APIError("An assigned programme does not exist.");
+      }
     }
     if (!Array.isArray(c.notes) || !c.targets || typeof c.targets !== "object") {
       throw new APIError("Invalid client notes or nutrition targets.");
@@ -117,6 +133,9 @@ export function validateWorkspace(w: any): Workspace {
     }
     if (c.checkin !== null && c.checkin !== undefined) {
       text(c.checkin, "check-in", 2000, true);
+    }
+    if (c.victorNotes !== null && c.victorNotes !== undefined) {
+      text(c.victorNotes, "Victor notes", 1000, true);
     }
     for (const k of ["calories", "protein", "carbs", "fat"]) number(c.targets[k], k, 1, 10000);
     if (c.parq) {

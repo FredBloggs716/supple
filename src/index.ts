@@ -18,6 +18,7 @@ import { createInvitation, memberActions } from "./member";
 import { leaderboard } from "./leaderboard";
 import { uploadVideo, serveVideo } from "./video";
 import { clientAccess } from "./clients";
+import { chat } from "./chat";
 
 export type { Env };
 
@@ -109,6 +110,11 @@ async function api(req: Request, env: Env, url: URL): Promise<Response> {
       await authenticate(req, env);
       return serveVideo(req, env, eid, m === "HEAD");
     }
+  }
+
+  if (path === "/api/chat" && m === "POST") {
+    const chatUser = await authenticate(req, env);
+    return chat(req, env, chatUser);
   }
 
   throw new APIError("Not found.", 404);
