@@ -138,27 +138,39 @@ export function memberStats(w: any, c: any): any {
 }
 
 // ---- email markup (tables + inline styles: survives Gmail/Outlook/Apple) ----
-const NAVY = "#002C8C", RED = "#D20020", INK = "#0b1433", MUTED = "#798092",
-  BODY = "#4b5366", LINE = "#e6e9f0", BG = "#f6f8fc", GREEN = "#148a4f", PALE = "#e6ecf8";
+// Futuristic night palette: near-black ground, neon cyan/red/green accents.
+const NAVY = "#00e5ff", // primary neon accent (was navy) — bars, links, highlights
+  RED = "#ff2d55", // neon red — points, alerts, CTA
+  INK = "#f2f6ff", // headline text on dark
+  MUTED = "#8b93b8",
+  BODY = "#c3cae2",
+  LINE = "#1c2443", // hairlines on dark cards
+  BG = "#11182e", // inset tiles (stat cells, day dots)
+  GREEN = "#39ff88", // neon green — goals hit, improvements
+  PALE = "#1a2140"; // bar tracks / medal chips
+const PAGE = "#05060d", CARD = "#0b101f", HEAD = "#080c18";
+const LOGO = "https://socialtrainingclub.uk/assets/logo-mark-white.png";
 const FONT = "font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;";
 
 const esc = (v: any): string =>
   String(v ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] as string);
 
 function shell(preheader: string, heading: string, sub: string, body: string): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
-<body style="margin:0;padding:0;background:${BG};${FONT}">
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark"></head>
+<body style="margin:0;padding:0;background:${PAGE};${FONT}">
 <span style="display:none;max-height:0;overflow:hidden">${esc(preheader)}</span>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BG}"><tr><td align="center" style="padding:28px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAGE}"><tr><td align="center" style="padding:28px 12px">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
-<tr><td style="background:${NAVY};border-radius:14px 14px 0 0;padding:34px 36px 30px">
-  <div style="${FONT}font-size:10px;letter-spacing:3px;color:#9fb4e8;font-weight:700">SOCIAL TRAINING CLUB</div>
-  <div style="${FONT}font-size:27px;line-height:1.25;color:#ffffff;font-weight:800;margin-top:10px">${heading}</div>
-  <div style="${FONT}font-size:13px;color:#b9c8ef;margin-top:8px">${esc(sub)}</div>
-  <div style="height:3px;width:52px;background:${RED};margin-top:18px"></div>
+<tr><td style="background:${HEAD};border:1px solid ${LINE};border-bottom:0;border-radius:16px 16px 0 0;padding:34px 36px 30px">
+  <img src="${LOGO}" width="46" height="46" alt="Social Training Club" style="display:block;border:0;margin-bottom:16px">
+  <div style="${FONT}font-size:10px;letter-spacing:4px;color:${NAVY};font-weight:700">SOCIAL TRAINING CLUB</div>
+  <div style="${FONT}font-size:27px;line-height:1.25;color:${INK};font-weight:800;margin-top:10px">${heading}</div>
+  <div style="${FONT}font-size:13px;color:${MUTED};margin-top:8px">${esc(sub)}</div>
+  <div style="height:3px;width:52px;background:${RED};margin-top:18px;box-shadow:0 0 12px ${RED}"></div>
 </td></tr>
 ${body}
-<tr><td style="background:#ffffff;border:1px solid ${LINE};border-top:0;border-radius:0 0 14px 14px;padding:22px 36px;text-align:center">
+<tr><td style="background:${HEAD};border:1px solid ${LINE};border-top:0;border-radius:0 0 16px 16px;padding:22px 36px;text-align:center">
   <div style="${FONT}font-size:11px;color:${MUTED};line-height:1.8">Good people. Better together.<br>
   Social Training Club · <a href="https://socialtrainingclub.uk" style="color:${NAVY}">socialtrainingclub.uk</a><br>
   You receive this as a club member. Reply to this email to talk to your coach, or ask to stop the weekly recap.</div>
@@ -167,15 +179,15 @@ ${body}
 }
 
 function section(inner: string, pad = "26px 36px"): string {
-  return `<tr><td style="background:#ffffff;border-left:1px solid ${LINE};border-right:1px solid ${LINE};padding:${pad}">${inner}</td></tr>`;
+  return `<tr><td style="background:${CARD};border-left:1px solid ${LINE};border-right:1px solid ${LINE};padding:${pad}">${inner}</td></tr>`;
 }
 function label(text: string): string {
   return `<div style="${FONT}font-size:10px;letter-spacing:2px;color:${MUTED};font-weight:700;margin-bottom:12px">${esc(text)}</div>`;
 }
 function statCells(stats: Array<[string | number, string, string?]>): string {
   const cell = ([big, small, colour]: [string | number, string, string?]) =>
-    `<td align="center" style="background:${BG};border:1px solid ${LINE};border-radius:10px;padding:16px 6px">
-      <div style="${FONT}font-size:26px;font-weight:800;color:${colour || INK}">${esc(big)}</div>
+    `<td align="center" style="background:${BG};border:1px solid ${colour && colour !== INK ? colour : LINE};border-radius:10px;padding:16px 6px">
+      <div style="${FONT}font-size:26px;font-weight:800;color:${colour || INK};text-shadow:0 0 14px ${colour || "transparent"}">${esc(big)}</div>
       <div style="${FONT}font-size:10px;letter-spacing:1px;color:${MUTED};font-weight:700;margin-top:4px">${esc(small)}</div></td>`;
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${stats
     .map(cell)
@@ -187,15 +199,15 @@ function barRow(name: string, pct: number, right: string, colour = NAVY): string
   <td align="right" style="${FONT}font-size:12px;font-weight:700;color:${INK};padding-bottom:5px">${esc(right)}</td></tr>
   <tr><td colspan="2"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
     <td style="background:${PALE};border-radius:6px;height:10px;font-size:0;line-height:0" width="100%">
-      <div style="background:${colour};border-radius:6px;height:10px;width:${Math.max(2, Math.min(100, pct))}%">&nbsp;</div>
+      <div style="background:${colour};border-radius:6px;height:10px;width:${Math.max(2, Math.min(100, pct))}%;box-shadow:0 0 10px ${colour}">&nbsp;</div>
     </td></tr></table></td></tr></table>`;
 }
 
 export function renderMemberEmail(s: any): string {
   const dayDots = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${s.days
     .map((d: any) => {
-      const bgc = d.trained ? NAVY : d.future ? "#ffffff" : BG;
-      const col = d.trained ? "#ffffff" : MUTED;
+      const bgc = d.trained ? NAVY : d.future ? CARD : BG;
+      const col = d.trained ? "#05060d" : MUTED;
       const brd = d.trained ? NAVY : LINE;
       return `<td align="center" style="padding:0 2px"><div style="background:${bgc};border:1px solid ${brd};border-radius:9px;padding:10px 0">
         <div style="${FONT}font-size:10px;font-weight:700;color:${col}">${esc(d.label)}</div>
@@ -242,11 +254,11 @@ export function renderMemberEmail(s: any): string {
     (s.tests.length ? section(label("CLUB TESTS THIS WEEK") + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${testRows}</table>`) : "") +
     section(
       `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td style="background:${NAVY};border-radius:12px;padding:22px 26px">
-        <div style="${FONT}font-size:13px;color:#b9c8ef">This week you're</div>
-        <div style="${FONT}font-size:24px;font-weight:800;color:#ffffff;margin-top:3px">#${s.rank} of ${s.of} in the club</div>
+      <td style="background:${BG};border:1px solid ${NAVY};border-radius:12px;padding:22px 26px;box-shadow:0 0 18px rgba(0,229,255,0.25)">
+        <div style="${FONT}font-size:13px;color:${MUTED}">This week you're</div>
+        <div style="${FONT}font-size:24px;font-weight:800;color:${NAVY};margin-top:3px;text-shadow:0 0 16px ${NAVY}">#${s.rank} of ${s.of} in the club</div>
       </td><td style="width:12px"></td>
-      <td align="center" style="background:${RED};border-radius:12px;padding:22px 10px" width="38%">
+      <td align="center" style="background:${RED};border-radius:12px;padding:22px 10px;box-shadow:0 0 18px rgba(255,45,85,0.4)" width="38%">
         <a href="https://socialtrainingclub.uk" style="${FONT}font-size:13px;font-weight:800;color:#ffffff;text-decoration:none">Open your<br>workspace →</a>
       </td></tr></table>`,
       "26px 36px 30px",
