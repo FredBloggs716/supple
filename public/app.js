@@ -104,6 +104,32 @@ if (session.user.role === "member") {
         Math.max(1, data.clients.length),
     );
   const pending = () => data.clients.filter((c) => c.checkin);
+  // Where a client sits in their programme's calendar. Mirrors the member
+  // timeline: the clock starts the Monday of their first log on the programme
+  // and runs for the programme's weeks — so the coach sees endings coming.
+  const progStatus = (c) => {
+    const p = programme((c.programmes || [])[0]);
+    if (!p) return null;
+    const first = data.logs
+      .filter((l) => l.client === c.id && l.programme === p.id)
+      .reduce((a, l) => (!a || l.date < a ? l.date : a), null);
+    if (!first) return { p, state: "idle", label: "Not started yet" };
+    const anchor = mondayOf(first);
+    const elapsed = Math.round(
+      (new Date(mondayOf(TODAY) + "T12:00:00") - new Date(anchor + "T12:00:00")) / 86400000,
+    );
+    const week = Math.floor(elapsed / 7) + 1;
+    const ends = offsetDay(anchor, p.weeks * 7 - 1);
+    if (week > p.weeks) return { p, week, ends, state: "finished", label: `Finished ${dateLabel(ends)}` };
+    if (week === p.weeks) return { p, week, ends, state: "final", label: `Final week — ends ${dateLabel(ends)}` };
+    return { p, week, ends, state: "active", label: `Week ${week} of ${p.weeks}` };
+  };
+  const endingClients = () =>
+    data.clients
+      .map((c) => ({ c, s: progStatus(c) }))
+      .filter(({ s }) => s && (s.state === "final" || s.state === "finished"));
+  const endingKey = ({ c, s }) => `end-${c.id}-${s.p.id}`;
+  const unreadEndings = () => endingClients().filter((e) => !data.readNotifications.includes(endingKey(e)));
   const weeklyGoal = () =>
     data.clients.reduce(
       (total, c) => total + (programme((c.programmes || [])[0])?.frequency || 3),
@@ -192,7 +218,7 @@ if (session.user.role === "member") {
             `<button class="nav-link ${ui.route === key ? "active" : ""}" data-nav="${key}" ${ui.route === key ? 'aria-current="page"' : ""}>${icon(ic)}<span>${name}</span>${key === "clients" ? `<span class="nav-count">${data.clients.length}</span>` : ""}</button>`,
         )
         .join("");
-    return `<button class="menu-scrim" data-action="menu-close" aria-label="Close navigation"></button><aside class="sidebar" aria-label="Main navigation"><a class="brand" href="#overview" aria-label="Social Training Club home"><img src="assets/logo-mark.png" alt=""><div class="wordmark">SOCIAL<br>TRAINING CLUB<span>STRONGER TOGETHER</span></div></a><button class="workspace-switch" data-action="workspace"><span class="workspace-icon">${icon("users")}</span><span><strong>Coach workspace</strong><small>${esc(data.settings.club)}</small></span>${icon("down")}</button><p class="nav-label">WORKSPACE</p><nav class="nav-list">${nav(["overview", "clients", "programmes", "nutrition", "library", "progress", "schedule"])}</nav><p class="nav-label nav-gap">THE CLUB</p><nav class="nav-list">${nav(["leaderboard"])}</nav><div class="sidebar-bottom"><nav class="nav-list">${nav(["settings"])}<button class="nav-link" data-action="help">${icon("help")}<span>Help & getting started</span></button></nav><div class="club-note">${icon("heart")}<strong>Good people. Better together.</strong>A little support goes a long way.<br>That’s what this club is here for.</div><button class="coach-profile" data-nav="settings">${avatar({ name: data.settings.coach, colour: "warm" })}<span><strong>${esc(data.settings.coach)}</strong><small>Head coach</small></span>${icon("more")}</button></div></aside><div class="shell"><header class="topbar"><button class="icon-btn mobile-menu" data-action="menu" aria-label="Open navigation">${icon("menu")}</button><div class="breadcrumbs"><span>Workspace</span>${icon("chevron")}<strong>${routeName}</strong></div><div class="top-actions"><button class="search-trigger" data-action="search" aria-label="Search clients, programmes and exercises">${icon("search")}<span>Search anything...</span><kbd>⌘ K</kbd></button><span class="top-divider"></span><button class="icon-btn" data-action="notifications" aria-label="Notifications">${icon("bell")}${data.settings.checkinAlerts && pending().some((c) => !data.readNotifications.includes(c.id)) ? '<i class="notification-dot"></i>' : ""}</button><button class="icon-btn" data-nav="settings" aria-label="Your profile">${avatar({ name: data.settings.coach, colour: "warm" })}</button></div></header><main class="content" id="main" tabindex="-1">${renderPage()}<footer class="page-footer"><span class="footer-brand"><img src="assets/logo-mark.png" alt="">Social Training Club <span>·</span> Built on showing up.</span><span class="local-status"><i class="dot"></i>Shared workspace · Connected</span></footer></main></div>`;
+    return `<button class="menu-scrim" data-action="menu-close" aria-label="Close navigation"></button><aside class="sidebar" aria-label="Main navigation"><a class="brand" href="#overview" aria-label="Social Training Club home"><img src="assets/logo-mark.png" alt=""><div class="wordmark">SOCIAL<br>TRAINING CLUB<span>STRONGER TOGETHER</span></div></a><button class="workspace-switch" data-action="workspace"><span class="workspace-icon">${icon("users")}</span><span><strong>Coach workspace</strong><small>${esc(data.settings.club)}</small></span>${icon("down")}</button><p class="nav-label">WORKSPACE</p><nav class="nav-list">${nav(["overview", "clients", "programmes", "nutrition", "library", "progress", "schedule"])}</nav><p class="nav-label nav-gap">THE CLUB</p><nav class="nav-list">${nav(["leaderboard"])}</nav><div class="sidebar-bottom"><nav class="nav-list">${nav(["settings"])}<button class="nav-link" data-action="help">${icon("help")}<span>Help & getting started</span></button></nav><div class="club-note">${icon("heart")}<strong>Good people. Better together.</strong>A little support goes a long way.<br>That’s what this club is here for.</div><button class="coach-profile" data-nav="settings">${avatar({ name: data.settings.coach, colour: "warm" })}<span><strong>${esc(data.settings.coach)}</strong><small>Head coach</small></span>${icon("more")}</button></div></aside><div class="shell"><header class="topbar"><button class="icon-btn mobile-menu" data-action="menu" aria-label="Open navigation">${icon("menu")}</button><div class="breadcrumbs"><span>Workspace</span>${icon("chevron")}<strong>${routeName}</strong></div><div class="top-actions"><button class="search-trigger" data-action="search" aria-label="Search clients, programmes and exercises">${icon("search")}<span>Search anything...</span><kbd>⌘ K</kbd></button><span class="top-divider"></span><button class="icon-btn" data-action="notifications" aria-label="Notifications">${icon("bell")}${(data.settings.checkinAlerts && pending().some((c) => !data.readNotifications.includes(c.id))) || unreadEndings().length ? '<i class="notification-dot"></i>' : ""}</button><button class="icon-btn" data-nav="settings" aria-label="Your profile">${avatar({ name: data.settings.coach, colour: "warm" })}</button></div></header><main class="content" id="main" tabindex="-1">${renderPage()}<footer class="page-footer"><span class="footer-brand"><img src="assets/logo-mark.png" alt="">Social Training Club <span>·</span> Built on showing up.</span><span class="local-status"><i class="dot"></i>Shared workspace · Connected</span></footer></main></div>`;
   }
   function render() {
     document.title = `${navItems.find((n) => n[0] === ui.route)?.[2] || "Overview"} · Social Training Club`;
@@ -327,7 +353,7 @@ if (session.user.role === "member") {
   function clientTable(clients, compact = false) {
     if (!clients.length)
       return empty("No clients found.", "Try another name or filter.", "users");
-    return `<div class="table-wrap"><table><thead><tr><th>Client</th><th>Programme</th>${compact ? "" : "<th>Goal</th>"}<th>Adherence</th><th>Status</th><th><span class="muted">View</span></th></tr></thead><tbody>${clients.map((c) => { const progs = (c.programmes || []).map(pid => programme(pid)?.name).filter(Boolean); const progDisplay = progs.length === 0 ? "Not assigned" : progs.length === 1 ? progs[0] : `${progs[0]} +${progs.length - 1}`; return `<tr><td><button class="client-cell client-name" data-action="client" data-id="${c.id}">${avatar(c)}<span><strong>${esc(c.name)}</strong><small>${c.streak} week streak</small></span></button></td><td>${esc(progDisplay)}</td>${compact ? "" : `<td>${esc(c.goal)}</td>`}<td><div class="table-progress"><div class="progress-track"><i style="width:${Math.min(100, c.adherence)}%"></i></div><span>${c.adherence}%</span></div></td><td>${pill(c.status, c.status === "On track" ? "success" : "warning", true)}</td><td><button class="icon-btn table-action" data-action="client" data-id="${c.id}" aria-label="View ${esc(c.name)}">${icon("chevron")}</button></td></tr>`; }).join("")}</tbody></table></div>`;
+    return `<div class="table-wrap"><table><thead><tr><th>Client</th><th>Programme</th>${compact ? "" : "<th>Goal</th>"}<th>Adherence</th><th>Status</th><th><span class="muted">View</span></th></tr></thead><tbody>${clients.map((c) => { const progs = (c.programmes || []).map(pid => programme(pid)?.name).filter(Boolean); const progDisplay = progs.length === 0 ? "Not assigned" : progs.length === 1 ? progs[0] : `${progs[0]} +${progs.length - 1}`; const ps = progStatus(c); const progLine = ps ? (ps.state === "finished" ? `<div style="margin-top:4px">${pill("Programme finished", "danger", true)}</div>` : ps.state === "final" ? `<div style="margin-top:4px">${pill("Final week", "warning", true)}</div>` : `<small class="muted" style="display:block;margin-top:3px">${esc(ps.label)}</small>`) : ""; return `<tr><td><button class="client-cell client-name" data-action="client" data-id="${c.id}">${avatar(c)}<span><strong>${esc(c.name)}</strong><small>${c.streak} week streak</small></span></button></td><td>${esc(progDisplay)}${progLine}</td>${compact ? "" : `<td>${esc(c.goal)}</td>`}<td><div class="table-progress"><div class="progress-track"><i style="width:${Math.min(100, c.adherence)}%"></i></div><span>${c.adherence}%</span></div></td><td>${pill(c.status, c.status === "On track" ? "success" : "warning", true)}</td><td><button class="icon-btn table-action" data-action="client" data-id="${c.id}" aria-label="View ${esc(c.name)}">${icon("chevron")}</button></td></tr>`; }).join("")}</tbody></table></div>`;
   }
   function filteredClients() {
     return data.clients.filter(
@@ -781,16 +807,21 @@ if (session.user.role === "member") {
   }
   async function notificationsModal() {
     const checkins = data.settings.checkinAlerts ? pending() : [];
+    const endings = endingClients();
     const milestones = data.settings.milestoneAlerts
       ? data.activity.slice(0, 3)
       : [];
     openModal(
       "A few things for you.",
       "Small updates from around the club.",
-      `${checkins.map((c) => `<button class="notification-row" data-action="client" data-id="${c.id}">${avatar(c)}<span><strong>${esc(c.name)} checked in</strong><p>${esc(c.checkin)}</p><small>Ready for your review</small></span></button>`).join("")}${milestones.map((a) => `<div class="notification-row"><span class="activity-symbol ${a.tone}">${icon(a.icon)}</span><div><strong>${esc(a.title)}</strong><p>${esc(a.text)}</p><small>${dateLabel(a.date)}</small></div></div>`).join("")}${!checkins.length && !milestones.length ? empty("All quiet for now.", "Your club updates will appear here.", "bell") : ""}`,
+      `${endings.map(({ c, s }) => `<button class="notification-row" data-action="client" data-id="${c.id}">${avatar(c)}<span><strong>${esc(c.name)}’s programme ${s.state === "finished" ? "has finished" : "finishes this week"}</strong><p>${esc(s.p.name)} · ${esc(s.label)}</p><small>Time to plan their next block</small></span></button>`).join("")}${checkins.map((c) => `<button class="notification-row" data-action="client" data-id="${c.id}">${avatar(c)}<span><strong>${esc(c.name)} checked in</strong><p>${esc(c.checkin)}</p><small>Ready for your review</small></span></button>`).join("")}${milestones.map((a) => `<div class="notification-row"><span class="activity-symbol ${a.tone}">${icon(a.icon)}</span><div><strong>${esc(a.title)}</strong><p>${esc(a.text)}</p><small>${dateLabel(a.date)}</small></div></div>`).join("")}${!checkins.length && !milestones.length && !endings.length ? empty("All quiet for now.", "Your club updates will appear here.", "bell") : ""}`,
     );
     data.readNotifications = [
-      ...new Set([...data.readNotifications, ...checkins.map((c) => c.id)]),
+      ...new Set([
+        ...data.readNotifications,
+        ...checkins.map((c) => c.id),
+        ...endings.map(endingKey),
+      ]),
     ];
     await persist();
     $(".notification-dot")?.remove();
