@@ -328,7 +328,13 @@ export function renderCoachEmail(w: any): string {
 }
 
 // ---- sending ----------------------------------------------------------------
-export async function sendEmail(env: Env, to: string, subject: string, html: string): Promise<boolean> {
+export async function sendEmail(
+  env: Env,
+  to: string,
+  subject: string,
+  html: string,
+  replyTo?: string,
+): Promise<boolean> {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
@@ -337,6 +343,13 @@ export async function sendEmail(env: Env, to: string, subject: string, html: str
       to: [to],
       subject,
       html,
+      // Replies go to the coach (club@ can't receive mail), and the
+      // List-Unsubscribe header is a mailbox-provider trust signal Yahoo and
+      // Gmail score senders on.
+      ...(replyTo ? { reply_to: [replyTo] } : {}),
+      headers: {
+        "List-Unsubscribe": `<mailto:${replyTo || "club@socialtrainingclub.uk"}?subject=unsubscribe%20weekly%20recap>`,
+      },
     }),
   });
   if (!res.ok) console.error("DIGEST send failed", to, res.status, await res.text());
@@ -351,8 +364,8 @@ export async function runWeeklyDigest(env: Env): Promise<{ sent: number; skipped
   for (const c of w.clients) {
     if (c.digestOptOut) continue;
     const s = memberStats(w, c);
-    if (await sendEmail(env, c.email, `Your week at the club — ${s.sessions} session${s.sessions === 1 ? "" : "s"}, ${s.xp} points`, renderMemberEmail(s))) sent++;
+    if (await sendEmail(env, c.email, `Your week at the club — ${s.sessions} session${s.sessions === 1 ? "" : "s"}, ${s.xp} points`, renderMemberEmail(s), w.settings.email)) sent++;
   }
-  if (await sendEmail(env, w.settings.email, "Coach digest — your club this week", renderCoachEmail(w))) sent++;
+  if (await sendEmail(env, w.settings.email, "Coach digest — your club this week", renderCoachEmail(w), w.settings.email)) sent++;
   return { sent };
 }
