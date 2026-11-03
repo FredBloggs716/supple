@@ -64,8 +64,8 @@ export const programmes = [
     ex("freehs", "balance · many short tries, stop while fresh"), ex("wallhspu", "strength · 3×3-5 negatives @ 3-5s down · rest 2min"), ex("pikepress", "wall drills · 3×3-5 slow · rest 90s"),
     ex("hollow", "line · 3×30s · rest 45s"),
   ]),
-  pg("hs3", "Handstand · Mastery (Advanced)", "Handstand", 6, 4, "dark",
-    "~40 min, 4×/wk. Wrist prep first. Freestanding time + press progressions + strict HSPU + one-arm prep (weight shifts to the fingertips). Goal: 30s freestanding, a press to handstand, strict HSPU.", [
+  pg("hs3", "Handstand · Mastery (Advanced)", "Handstand", 8, 4, "dark",
+    "~40 min, 4×/wk. Wrist prep first. Freestanding time + press progressions + strict HSPU + one-arm prep (weight shifts to the fingertips). Goal PER CYCLE: add 10-15s to the freestanding hold, move the press negatives closer to full, add a rep to the HSPU. Mastery (30s+ free, full press, strict HSPU) is months of cycles — repeat the block and progress each run.", [
     ex("wristprep", "warm-up · 5 min"), ex("freehs", "holds · accumulate time + weight shifts · rest fully"), ex("pikepress", "press · 4×3-5 slow · rest 2min"),
     ex("straddlepress", "press · 4×3-5 negatives→full · rest 2min"), ex("wallhspu", "HSPU · 4×3-5 @ 3s down · rest 2min"), ex("hollowrock", "core · 3×12 rhythm"),
   ]),
@@ -86,12 +86,12 @@ export const programmes = [
     ex("ringdip", "push · 3×5-8 controlled · rest 90s"), ex("straddlebl", "hold · 4×10s · rest 90s"), ex("flrow", "pull · 3×5 crisp · rest 90s"),
   ]),
   pg("gym4", "Gymnastic Strength · L4 Strength", "Gymnastic strength", 6, 3, "dark",
-    "~55 min. Wrist prep first. Straddle front lever + straddle planche + front-lever rows + HSPU + muscle-up. Elite straight-arm strength — pristine form or regress. Hold the cleanest few seconds you own.", [
+    "~55 min. Wrist prep first. Straddle front lever + straddle planche + front-lever rows + HSPU + muscle-up. Elite straight-arm strength — pristine form or regress. Hold the cleanest few seconds you own. These holds take months: run the block back-to-back, progressing leverage a notch per cycle.", [
     ex("wristprep", "warm-up · 5 min"), ex("straddlefl", "holds · 5×8-10s · rest 2min"), ex("straddleplanche", "holds · 5×8-10s · rest 2min"), ex("flrow", "pull · 4×5 · body flat · rest 2min"),
     ex("wallhspu", "push · 4×5 @ 3s down · rest 2min"), ex("muscleup", "dynamic · 4×2-3 fresh + explosive · rest 2min"), ex("germanhang", "shoulder · 3×30s easy"),
   ]),
   pg("gym5", "Gymnastic Strength · L5 Elite", "Gymnastic strength", 6, 3, "dark",
-    "~55 min. Wrist prep first. Full front lever + planche work + lever/planche pulls + one-arm prep. The top of the ladder — built over months of consistent, clean holds. Quality is everything.", [
+    "~55 min. Wrist prep first. Full front lever + planche work + lever/planche pulls + one-arm prep. The top of the ladder — built over months of consistent, clean holds; repeat the block as many cycles as it takes. Quality is everything.", [
     ex("wristprep", "warm-up · 5 min"), ex("fullfl", "holds · 5×max clean line · rest 2-3min"), ex("straddleplanche", "holds · 5×max (→full) · rest 2-3min"), ex("flrow", "pull · 5×3-5 · rest 2min"),
     ex("muscleup", "dynamic · 5×2-3 strict-ish · rest 2min"), ex("ringsupport", "RTO hold · 4×30s · rest 90s"), ex("pullup", "weighted · 4×5 · rest 2min"),
   ]),
