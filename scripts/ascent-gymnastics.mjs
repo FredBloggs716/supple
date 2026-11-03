@@ -65,7 +65,7 @@ export const programmes = [
     ex("hollow", "line · 3×30s · rest 45s"),
   ]),
   pg("hs3", "Handstand · Mastery (Advanced)", "Handstand", 8, 4, "dark",
-    "~40 min, 4×/wk. Wrist prep first. Freestanding time + press progressions + strict HSPU + one-arm prep (weight shifts to the fingertips). Goal PER CYCLE: add 10-15s to the freestanding hold, move the press negatives closer to full, add a rep to the HSPU. Mastery (30s+ free, full press, strict HSPU) is months of cycles — repeat the block and progress each run.", [
+    "~40 min, 4×/wk. Wrist prep first. Freestanding time + press progressions + strict HSPU + one-arm prep (weight shifts). Goal PER CYCLE: +10-15s freestanding, press negatives closer to full, +1 HSPU rep. Mastery (30s+ free, full press, strict HSPU) takes months — repeat the block, progress each run.", [
     ex("wristprep", "warm-up · 5 min"), ex("freehs", "holds · accumulate time + weight shifts · rest fully"), ex("pikepress", "press · 4×3-5 slow · rest 2min"),
     ex("straddlepress", "press · 4×3-5 negatives→full · rest 2min"), ex("wallhspu", "HSPU · 4×3-5 @ 3s down · rest 2min"), ex("hollowrock", "core · 3×12 rhythm"),
   ]),

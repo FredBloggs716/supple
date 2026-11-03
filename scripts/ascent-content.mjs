@@ -101,7 +101,7 @@ export const programmes = [
   ]),
   // 2. TENDON REBUILD — isometric → slow → eccentric, minimal ballistic
   pg("tendon", "Tendon Rebuild", "Tissue capacity", 8, 3, "sage",
-    "~45 min · Tissue-first: iso → slow strength → eccentric. Circuits ×2 per group, rest 60-90s between rounds. Tempo 3-1-1 ≈ 5s TUT per rep. Wk1-2 holds own the isos, wk3-5 add load + ROM, wk6-8 bias the eccentrics + low pogo if pain-free. Tendons remodel on an 8-12 week clock — don't rush it. Load off the next-morning tendon response.", [
+    "~45 min · Tissue-first: iso → slow strength → eccentric. Circuits ×2 per group, rest 60-90s between rounds. Tempo 3-1-1 ≈ 5s TUT. Wk1-2 own the isos, wk3-5 add load + ROM, wk6-8 bias eccentrics + low pogo if pain-free. Tendons remodel over 8-12 wks — don't rush. Load off the next-morning response.", [
     ex("span", "G1 knee iso · 2×30-45s · firm, breathe"), ex("calfraise", "G1 calf · 2×12 @ 3-1-1 slow"), ex("stepdown", "G1 patellar · 2×6-8/side · 3s down"), ex("tibraise", "G1 ankle · 2×15-20 · pump"),
     ex("rdl", "G2 hinge · 2×6-8 @ 3-1-1 · hams loaded"), ex("hambridge", "G2 ham iso · 2×20-30s long-lever"), ex("slidercurl", "G2 eccentric · 2×6-10 · 5s slide out"), ex("ninety", "G2 mobility · 2×8/side · slow"),
     ex("copenhagen", "G3 adductor · 2×15-25s/side"), ex("revlunge", "G3 single-leg · 2×6-8/side @ 2-0-1"), ex("latlunge", "G3 frontal · 2×6/side · sit in"), ex("bss", "G3 knee · 2×6/side @ 3-0-1"),
@@ -116,7 +116,7 @@ export const programmes = [
   ]),
   // 4. TRIPHASIC STRENGTH — heavy mains, full recovery, active rest = CARs
   pg("triphasic", "Triphasic Strength", "Max strength", 6, 3, "dark",
-    "~60 min · Heavy and clean, FULL recovery between main sets (2-3 min — do the CARs while you rest). Tempo wave, 2 weeks per phase: Wk1-2 eccentric 5s down · Wk3-4 isometric 3s pause in the hole · Wk5-6 explosive up. Second week of each phase: nudge the load. Wk6: drop to 3 sets on the mains — express it, don't bury it. Stop a rep shy of grinding; tendons get a vote.", [
+    "~60 min · Heavy, clean, FULL recovery on mains (2-3 min — CARs while you rest). Tempo wave, 2 wks/phase: wk1-2 eccentric 5s down · wk3-4 iso 3s pause · wk5-6 explosive up. Nudge load each second week. Wk6: 3 sets on mains — express it. Stop a rep shy of grinding; tendons get a vote.", [
     ex("frontsquat", "G1 main · 4×5 · wk1-2 5s ecc / wk3-4 3s pause / wk5-6 fast · rest 2-3min"), ex("shouldercars", "G1 active rest · 3/dir between sets"),
     ex("tbdl", "G2 hinge · 4×4-6 · same tempo wave · rest 2-3min"), ex("calfraise", "G2 active rest · 12 slow"),
     ex("swing", "G3 power · 8×10 crisp · rest 60s"), ex("deadbug", "G3 active rest · 6/side"),
@@ -125,7 +125,7 @@ export const programmes = [
   ]),
   // 5. POWER & SPEED — fresh CNS, primer + contrast, quality not density
   pg("power", "Power & Speed", "Power/speed", 4, 3, "stone",
-    "~55 min · Speed is skill: train FRESH, quality over density, 95%+ recovery on fast work (2-3 min between efforts). Contrast = heavy set, then the explosive pair straight after. Wk1 10-20m accels, wk2 add contrast load, wk3 30m + flying starts, wk4 −30% volume but keep every rep razor sharp — express what you built. Stop when speed drops.", [
+    "~55 min · Speed is skill: train FRESH, quality over density, full recovery on fast work (2-3 min). Contrast = heavy set, then the explosive pair straight after. Wk1 10-20m accels, wk2 add contrast load, wk3 30m + flying starts, wk4 −30% volume but razor sharp — express it. Stop when speed drops.", [
     ex("askip", "P1 primer · 4×20m · tall + springy"), ex("accel", "P1 speed · 6×10-20m · FULL rest 2-3min"), ex("pogo", "P1 elastic · 4×10 · min ground time"),
     ex("sq", "G2 contrast A · 4×3 heavy, fast intent · rest 2min"), ex("broad", "G2 contrast B · 4×3 max · straight after squat"), ex("hipcars", "G2 active rest · 3/dir"),
     ex("swing", "G3 power · 5×10 crisp · rest 60-90s"), ex("box", "G3 plyo · 4×3 · step down + reset"), ex("mbslam", "G3 throw · 4×5 max intent"),
@@ -153,9 +153,9 @@ export const programmes = [
   ]),
   // 10. ENGINE — intervals + repeat sprints, the genuinely hard conditioning block
   pg("engine", "Engine · Intervals & Repeat Sprints", "Conditioning", 6, 3, "stone",
-    "~40 min · The hard engine block. Speed work first, FRESH — then repeat sprints — then ONE interval tool (bike / rower / burpees, pick what you've got). Intervals at RPE 8-9: this one is meant to hurt, but shape never fails. Wk1-2 find your paces, wk3-4 add a rep + trim the rest, wk5 peak, wk6 deload −40%. Not within 48h of a match or key rugby day.", [
+    "~40 min · The hard engine block. Speed first, FRESH — then repeat sprints — then ONE interval tool (bike/row/burpees). Intervals RPE 8-9: meant to hurt, but shape never fails. Wk1-2 find your paces, wk3-4 add a rep + trim rest, wk5 peak, wk6 deload −40%. Not within 48h of a match.", [
     ex("askip", "P1 primer · 4×20m · tall + springy"), ex("codcut", "P1 primer · 4×2 cuts/side · low hips, build speed"),
-    ex("accel", "G2 repeat sprint · 2 blocks of 6×20m · go every 30-45s · 3min between blocks · hold your times"), ex("decelstick", "G2 braking · 3×3/side · run in, STICK the stop"),
+    ex("accel", "G2 repeat sprint · 2×(6×20m) · go every 30-45s · 3min between blocks"), ex("decelstick", "G2 braking · 3×3/side · run in, STICK the stop"),
     ex("bike", "G3 intervals · pick ONE tool · 8×30s hard / 90s easy · wk3+ build to 10"), ex("rowerg", "G3 intervals · pick ONE tool · 8×30s hard / 90s easy · strong leg drive"), ex("burpee", "G3 intervals · no-kit option · 8×30s steady-hard / 90s easy · smooth rhythm"),
     ex("farmer", "G4 flush · 2×40m · tall, nasal breathing"), ex("bearcrawl", "G4 flush · 2×15m slow · downshift"),
   ]),
