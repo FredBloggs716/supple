@@ -52,10 +52,11 @@
   --muted: #798092;
   --body: #4b5366;
   --line: #e6e9f0;
-  --bg: #f6f8fc;
+  --bg: #e7edf7;
   --pale: #e6ecf8;
   --green: #148a4f;
   --sidebar: 232px;
+  --ticker-h: 36px;
 }
 * {
   box-sizing: border-box;
@@ -67,6 +68,7 @@ body {
   color: var(--body);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
+  padding-top: var(--ticker-h);
 }
 button,
 input,
@@ -185,6 +187,7 @@ small {
 .sidebar {
   position: fixed;
   inset: 0 auto 0 0;
+  top: var(--ticker-h);
   width: var(--sidebar);
   background: #fff;
   border-right: 1px solid var(--line);
@@ -3510,6 +3513,88 @@ tr:last-child td {
   border-top: 1px solid var(--line);
 }
 
+/* ---- Weekly challenge ticker (floating top bar) ---- */
+.challenge-ticker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--ticker-h);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 16px;
+  background: linear-gradient(90deg, var(--navy), #00227a 55%, #001a5e);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+.challenge-ticker .ticker-label {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ff8fa0;
+  white-space: nowrap;
+}
+.challenge-ticker .ticker-label .icon {
+  width: 14px;
+  height: 14px;
+}
+.challenge-ticker .ticker-label::after {
+  content: "";
+  width: 1px;
+  height: 16px;
+  margin-left: 6px;
+  background: rgba(255, 255, 255, 0.22);
+}
+.ticker-viewport {
+  flex: 1;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+}
+.ticker-track {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+  animation: ticker-scroll 72s linear infinite;
+}
+.challenge-ticker:hover .ticker-track {
+  animation-play-state: paused;
+}
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d4deff;
+}
+.ticker-item .tdot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--red);
+  flex: none;
+}
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+}
+
 /* ---- PAR-Q + declaration (sign-up) ---- */
 .parq-box {
   border: 1px solid var(--line);
@@ -3599,3 +3684,178 @@ tr:last-child td {
 .week-chip.future { background: var(--bg); cursor: default; opacity: 0.72; }
 .week-chip.future:hover { border-color: var(--line); box-shadow: none; }
 @media (max-width: 640px) { .week-strip { padding: 12px 14px; } .week-chip { min-width: 96px; } }
+
+/* ============================================================
+   GLASS THEME
+   Translucent "frosted" surfaces over an ambient brand backdrop,
+   plus seamless view / card / modal transitions. Appended as an
+   override layer so the frozen markup & structure stay untouched.
+   The prefers-reduced-motion reset earlier in this file still
+   disables every animation/transition below (it uses !important).
+   ============================================================ */
+:root {
+  --glass: rgba(255, 255, 255, 0.52);
+  --glass-strong: rgba(255, 255, 255, 0.72);
+  --glass-brd: rgba(255, 255, 255, 0.66);
+  --glass-brd-soft: rgba(255, 255, 255, 0.4);
+  --glass-blur: 18px;
+  --glass-shadow: 0 10px 30px rgba(11, 20, 51, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --glass-shadow-lift: 0 18px 44px rgba(11, 20, 51, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --ease-glass: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Ambient, brand-tinted backdrop so the frost actually reads */
+body {
+  background:
+    radial-gradient(1100px 620px at 8% -8%, rgba(0, 44, 140, 0.16), transparent 60%),
+    radial-gradient(900px 520px at 108% 4%, rgba(210, 0, 32, 0.12), transparent 55%),
+    radial-gradient(1000px 760px at 52% 118%, rgba(0, 44, 140, 0.12), transparent 60%),
+    linear-gradient(180deg, #eef2fc 0%, #e6ecf8 50%, #e9eef8 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* --- Frosted surfaces --- */
+.panel,
+.stat,
+.spotlight,
+.price-card,
+.landing-feature,
+.search-trigger,
+.workspace-switch {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  border: 1px solid var(--glass-brd);
+  box-shadow: var(--glass-shadow);
+}
+
+.sidebar {
+  background: rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  backdrop-filter: blur(22px) saturate(140%);
+  border-right: 1px solid var(--glass-brd-soft);
+}
+.topbar {
+  background: rgba(255, 255, 255, 0.45);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+  border-bottom: 1px solid var(--glass-brd-soft);
+}
+
+/* Landing header floats as a frosted sticky bar under the ticker */
+.landing-top {
+  background: rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  border-bottom: 1px solid var(--glass-brd-soft);
+  position: sticky;
+  top: var(--ticker-h);
+  z-index: 20;
+}
+
+/* Frosted dark challenge bar */
+.challenge-ticker {
+  background: linear-gradient(90deg, rgba(0, 30, 95, 0.74), rgba(0, 22, 72, 0.74));
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  animation: fade-in 0.5s ease-out;
+}
+
+/* Default/ghost buttons pick up glass; .btn.primary/.accent/.white keep
+   their solid brand fills (higher specificity wins). */
+.btn {
+  background: rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-brd);
+  transition: background 0.2s ease, transform 0.12s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.btn:hover {
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 6px 18px rgba(11, 20, 51, 0.12);
+  transform: translateY(-1px);
+}
+
+/* Frosted modal + sticky head */
+.modal-backdrop {
+  background: rgba(11, 20, 51, 0.42);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.modal {
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  backdrop-filter: blur(28px) saturate(150%);
+  border: 1px solid var(--glass-brd);
+  box-shadow: 0 30px 80px rgba(11, 20, 51, 0.28);
+  animation: glass-modal-in 0.26s var(--ease-glass);
+}
+.modal-head {
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+  border-bottom: 1px solid var(--glass-brd-soft);
+}
+
+/* Tables sit transparently inside the frosted panels */
+.panel table,
+.panel thead th,
+.table-wrap,
+.table-wrap table {
+  background: transparent;
+}
+
+/* Frosted toast */
+#toast {
+  background: rgba(11, 20, 51, 0.78);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* --- Seamless transitions --- */
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes glass-modal-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+/* View / route fade (content is rebuilt on navigation) */
+.content {
+  animation: view-in 0.3s var(--ease-glass);
+}
+.landing {
+  animation: view-in 0.42s var(--ease-glass);
+}
+
+/* Card & hover micro-motion */
+.panel,
+.stat,
+.spotlight,
+.price-card,
+.landing-feature {
+  transition: transform 0.25s var(--ease-glass), box-shadow 0.25s ease,
+    background 0.25s ease, border-color 0.25s ease;
+}
+.stat:hover,
+.spotlight:hover,
+.price-card:hover,
+.landing-feature:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--glass-shadow-lift);
+  background: var(--glass-strong);
+}
+.panel:hover {
+  box-shadow: var(--glass-shadow-lift);
+}
+.nav-link {
+  transition: background 0.2s ease, color 0.2s ease, transform 0.16s var(--ease-glass);
+}
+.nav-link:hover {
+  transform: translateX(2px);
+}

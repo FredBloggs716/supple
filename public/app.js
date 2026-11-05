@@ -2,6 +2,10 @@ import { seedData, TODAY, dayKey, offsetDay, mondayOf } from "./data.js";
 import { icon } from "./icons.js";
 import { api, bootAuth, logout } from "./auth.js";
 import { TEST_POOL, weeklyTests, testByKind, formatResult } from "./tests.js";
+import { mountChallengeTicker } from "./ticker.js";
+// Floating weekly-challenge ticker — mount immediately (local data, no network)
+// so it paints before auth resolves, for landing, coach and member alike.
+mountChallengeTicker();
 const session = await bootAuth();
 if (session.user.role === "member") {
   const { startMemberApp } = await import("./member.js");
