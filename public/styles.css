@@ -3718,8 +3718,8 @@ body::before {
   inset: 0;
   z-index: -2;
   background: url("assets/training-bg.jpg") center center / cover no-repeat;
-  filter: blur(14px) saturate(108%) brightness(1.05);
-  transform: scale(1.12);
+  filter: blur(5px) saturate(106%);
+  transform: scale(1.04);
   pointer-events: none;
 }
 body::after {
@@ -3729,9 +3729,9 @@ body::after {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(1100px 640px at 6% -10%, rgba(0, 44, 140, 0.18), transparent 56%),
-    radial-gradient(960px 540px at 114% 2%, rgba(210, 0, 32, 0.1), transparent 55%),
-    linear-gradient(160deg, rgba(235, 240, 251, 0.86), rgba(238, 236, 249, 0.8) 48%, rgba(248, 238, 242, 0.85));
+    radial-gradient(1100px 640px at 6% -10%, rgba(0, 44, 140, 0.16), transparent 58%),
+    radial-gradient(960px 540px at 114% 2%, rgba(210, 0, 32, 0.1), transparent 56%),
+    linear-gradient(160deg, rgba(235, 240, 251, 0.4), rgba(238, 236, 249, 0.32) 48%, rgba(248, 238, 242, 0.4));
 }
 
 /* --- Frosted surfaces --- */
