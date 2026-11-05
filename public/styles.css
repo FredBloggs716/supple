@@ -3694,25 +3694,44 @@ tr:last-child td {
    disables every animation/transition below (it uses !important).
    ============================================================ */
 :root {
-  --glass: rgba(255, 255, 255, 0.52);
+  --glass: rgba(255, 255, 255, 0.55);
   --glass-strong: rgba(255, 255, 255, 0.72);
-  --glass-brd: rgba(255, 255, 255, 0.66);
-  --glass-brd-soft: rgba(255, 255, 255, 0.4);
-  --glass-blur: 18px;
-  --glass-shadow: 0 10px 30px rgba(11, 20, 51, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  --glass-shadow-lift: 0 18px 44px rgba(11, 20, 51, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --glass-brd: rgba(255, 255, 255, 0.8);
+  --glass-brd-soft: rgba(255, 255, 255, 0.55);
+  --glass-blur: 20px;
+  --glass-shadow: 0 18px 44px rgba(11, 20, 51, 0.2), 0 3px 10px rgba(11, 20, 51, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --glass-shadow-lift: 0 28px 60px rgba(11, 20, 51, 0.28), 0 6px 16px rgba(11, 20, 51, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.95);
   --ease-glass: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Ambient, brand-tinted backdrop so the frost actually reads */
+/* Depth backdrop — a lightly-blurred training photo behind everything, so the
+   frosted panels float over real depth (3D). Two fixed layers that sit BEHIND
+   page content (negative z-index): the blurred photo, then a light brand-tinted
+   wash that keeps it muted enough for the dark dashboard text to stay readable. */
 body {
-  background:
-    radial-gradient(1100px 620px at 8% -8%, rgba(0, 44, 140, 0.16), transparent 60%),
-    radial-gradient(900px 520px at 108% 4%, rgba(210, 0, 32, 0.12), transparent 55%),
-    radial-gradient(1000px 760px at 52% 118%, rgba(0, 44, 140, 0.12), transparent 60%),
-    linear-gradient(180deg, #eef2fc 0%, #e6ecf8 50%, #e9eef8 100%);
-  background-attachment: fixed;
+  background: #e7edf7;
   min-height: 100vh;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: url("assets/training-bg.jpg") center center / cover no-repeat;
+  filter: blur(14px) saturate(108%) brightness(1.05);
+  transform: scale(1.12);
+  pointer-events: none;
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(1100px 640px at 6% -10%, rgba(0, 44, 140, 0.18), transparent 56%),
+    radial-gradient(960px 540px at 114% 2%, rgba(210, 0, 32, 0.1), transparent 55%),
+    linear-gradient(160deg, rgba(235, 240, 251, 0.86), rgba(238, 236, 249, 0.8) 48%, rgba(248, 238, 242, 0.85));
 }
 
 /* --- Frosted surfaces --- */
@@ -3724,23 +3743,28 @@ body {
 .search-trigger,
 .workspace-switch {
   background: var(--glass);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(170%);
   border: 1px solid var(--glass-brd);
   box-shadow: var(--glass-shadow);
 }
 
 .sidebar {
   background: rgba(255, 255, 255, 0.5);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
-  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(165%);
+  backdrop-filter: blur(24px) saturate(165%);
   border-right: 1px solid var(--glass-brd-soft);
 }
 .topbar {
-  background: rgba(255, 255, 255, 0.45);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  backdrop-filter: blur(18px) saturate(140%);
+  background: rgba(255, 255, 255, 0.46);
+  -webkit-backdrop-filter: blur(20px) saturate(165%);
+  backdrop-filter: blur(20px) saturate(165%);
   border-bottom: 1px solid var(--glass-brd-soft);
+}
+
+/* Landing wrapper transparent so the photo backdrop shows through */
+.landing {
+  background: transparent;
 }
 
 /* Landing header floats as a frosted sticky bar under the ticker */
